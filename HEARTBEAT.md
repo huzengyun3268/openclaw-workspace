@@ -45,14 +45,17 @@
 ## 投标文件任务
 - 项目：台州府城集散中心项目
 - 状态：⚠️ 需要真实定额单价表
-- 说明：用户指出造价计算需要真实的2018浙江定额单价，无法随便估算
 - 输出文件：台州府城_招标控制价_2018定额.xlsx (需修订)
 
 ## GitHub 备份配置
 - 仓库：https://github.com/huzengyun3268/openclaw-workspace
 - 分支：master
-- 推送命令：git push
-- 建议：token 存储在 .netrc 或 Git credential manager 中，下次推送前清理 git remote 中的明文密码
+- 状态：✅ 已完成 2026-03-18
+
+## 定时任务
+- 股票早报：每天08:00 (Asia/Shanghai)，cron ID: fc6c3a40-c5e3-4898-9c6b-a55010cb742b
+- 早报脚本：C:\Users\Administrator\.openclaw\workspace\scripts\stock_morning_report.js
+- 注意：message工具发送飞书曾出现ok:false错误，需确认
 
 ## 儿子求职任务
 - 状态：已过期，待重新规划
