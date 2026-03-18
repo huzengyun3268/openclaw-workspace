@@ -1,0 +1,13 @@
+{
+  "name": "marcus-daily-momentum",
+  "description": "Marcus - 每日动量报告 Agent，华尔街资深交易员风格",
+  "version": "1.0.0",
+  "trigger": "cron",
+  "schedule": "0 30 8 * * 1-5",
+  "enabled": true,
+  "channel": "webchat",
+  "model": "minimax/MiniMax-M2.5-highspeed",
+  "thinking": false,
+  "prompt_file": "SKILL.md",
+  "keywords": ["股票", "日报", "动量", "交易", "复盘", "Marcus"]
+}

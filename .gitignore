@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+akshare/
+baostock/
+__pycache__/
+*.pyc
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Downloads & temp
+downloads/
+temp/
+temp_check.ps1
+
+# Excel/temp files
+*.xlsx~
+*.tmp
+
+# Large binary files
+*.mp4
+*.zip
+*.pdf
+
+# Skills (can be reinstalled)
+.clawhub/
+
+# Secrets (never commit)
+.env
+*.pem
+*.key
+credentials.json

@@ -1,0 +1,6 @@
+interface:
+  display_name: "TuriX CUA"
+  short_description: "Submit CUA goals to TuriX and track execution"
+  icon_small: "./assets/icon-turix.png"
+  brand_color: "#B3A6D1"
+  default_prompt: "Use $turix-cua to submit a CUA goal to TuriX and track the task result."

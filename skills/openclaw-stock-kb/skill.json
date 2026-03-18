@@ -1,0 +1,9 @@
+{
+  "name": "openclaw-stock-kb",
+  "displayName": "股票量化百科",
+  "description": "A股策略库、技术指标、情绪分析、估值方法",
+  "version": "1.0.0",
+  "author": "local",
+  "trigger": "股票百科|量化百科|策略库|技术指标|A股知识",
+  "main": "main.py"
+}

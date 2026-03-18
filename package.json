@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "docx": "^9.6.1",
+    "markdown-to-docx": "^1.2.0",
+    "turndown": "^7.2.2"
+  }
+}
