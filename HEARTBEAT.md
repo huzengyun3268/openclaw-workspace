@@ -48,5 +48,11 @@
 - 说明：用户指出造价计算需要真实的2018浙江定额单价，无法随便估算
 - 输出文件：台州府城_招标控制价_2018定额.xlsx (需修订)
 
+## GitHub 备份配置
+- 仓库：https://github.com/huzengyun3268/openclaw-workspace
+- 分支：master
+- 推送命令：git push
+- 建议：token 存储在 .netrc 或 Git credential manager 中，下次推送前清理 git remote 中的明文密码
+
 ## 儿子求职任务
 - 状态：已过期，待重新规划
