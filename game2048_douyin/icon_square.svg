@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="tile2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#eee4da"/>
+      <stop offset="100%" style="stop-color:#cdc1b4"/>
+    </linearGradient>
+    <linearGradient id="tile8" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f2b179"/>
+      <stop offset="100%" style="stop-color:#e59550"/>
+    </linearGradient>
+    <linearGradient id="tile64" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f65e3b"/>
+      <stop offset="100%" style="stop-color:#e53e1a"/>
+    </linearGradient>
+    <linearGradient id="tile256" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#edcc61"/>
+      <stop offset="100%" style="stop-color:#e5c23f"/>
+    </linearGradient>
+    <linearGradient id="tile2048" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f79711"/>
+      <stop offset="100%" style="stop-color:#f95306"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background - sharp square -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- Game board - sharp square -->
+  <rect x="30" y="30" width="452" height="452" fill="#0f3460"/>
+
+  <!-- Row 1 tiles -->
+  <rect x="42" y="42" width="100" height="100" fill="url(#tile2)"/>
+  <rect x="148" y="42" width="100" height="100" fill="url(#tile2)"/>
+  <rect x="254" y="42" width="100" height="100" fill="url(#tile8)"/>
+  <rect x="360" y="42" width="100" height="100" fill="#1a1a2e"/>
+
+  <!-- Row 2 tiles -->
+  <rect x="42" y="148" width="100" height="100" fill="url(#tile8)"/>
+  <rect x="148" y="148" width="100" height="100" fill="url(#tile64)"/>
+  <rect x="254" y="148" width="100" height="100" fill="#1a1a2e"/>
+  <rect x="360" y="148" width="100" height="100" fill="url(#tile64)"/>
+
+  <!-- Row 3 tiles -->
+  <rect x="42" y="254" width="100" height="100" fill="#1a1a2e"/>
+  <rect x="148" y="254" width="100" height="100" fill="url(#tile256)"/>
+  <rect x="254" y="254" width="100" height="100" fill="url(#tile256)"/>
+  <rect x="360" y="254" width="100" height="100" fill="url(#tile2048)" filter="url(#glow)"/>
+
+  <!-- Row 4 tiles -->
+  <rect x="42" y="360" width="100" height="100" fill="url(#tile8)"/>
+  <rect x="148" y="360" width="100" height="100" fill="#1a1a2e"/>
+  <rect x="254" y="360" width="100" height="100" fill="url(#tile2)"/>
+  <rect x="360" y="360" width="100" height="100" fill="url(#tile256)"/>
+
+  <!-- Numbers Row 1 -->
+  <text x="92" y="110" font-family="Arial" font-size="38" font-weight="bold" fill="#776e65" text-anchor="middle">2</text>
+  <text x="198" y="110" font-family="Arial" font-size="38" font-weight="bold" fill="#776e65" text-anchor="middle">2</text>
+  <text x="304" y="110" font-family="Arial" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">8</text>
+
+  <!-- Numbers Row 2 -->
+  <text x="92" y="216" font-family="Arial" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">8</text>
+  <text x="198" y="216" font-family="Arial" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">64</text>
+  <text x="410" y="216" font-family="Arial" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">64</text>
+
+  <!-- Numbers Row 3 -->
+  <text x="198" y="322" font-family="Arial" font-size="30" font-weight="bold" fill="#fff" text-anchor="middle">256</text>
+  <text x="304" y="322" font-family="Arial" font-size="30" font-weight="bold" fill="#fff" text-anchor="middle">256</text>
+  <text x="410" y="322" font-family="Arial" font-size="26" font-weight="bold" fill="#fff" text-anchor="middle">2048</text>
+
+  <!-- Numbers Row 4 -->
+  <text x="92" y="428" font-family="Arial" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">8</text>
+  <text x="304" y="428" font-family="Arial" font-size="38" font-weight="bold" fill="#776e65" text-anchor="middle">2</text>
+  <text x="410" y="428" font-family="Arial" font-size="30" font-weight="bold" fill="#fff" text-anchor="middle">256</text>
+
+  <!-- Star accents -->
+  <circle cx="480" cy="30" r="8" fill="#f79711" opacity="0.9"/>
+  <circle cx="460" cy="55" r="5" fill="#f79711" opacity="0.6"/>
+  <circle cx="30" cy="490" r="7" fill="#f79711" opacity="0.7"/>
+  <circle cx="55" cy="470" r="4" fill="#f79711" opacity="0.5"/>
+</svg>
