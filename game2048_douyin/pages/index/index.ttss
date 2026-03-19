@@ -1,0 +1,126 @@
+/* 游戏页面样式 */
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #1a1a2e;
+  min-height: 100vh;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+}
+.score-row {
+  display: flex;
+  gap: 80rpx;
+  margin-bottom: 20rpx;
+}
+.score-num {
+  color: #f79711;
+  font-weight: bold;
+}
+/* 棋盘 */
+.board {
+  width: 600rpx;
+  height: 600rpx;
+  background: #16213e;
+  border-radius: 24rpx;
+  border: 4rpx solid #0f3460;
+  padding: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  box-shadow: 0 20rpx 60rpx rgba(0,0,0,0.5);
+  position: relative;
+}
+.row {
+  display: flex;
+  gap: 12rpx;
+  flex: 1;
+}
+.cell {
+  flex: 1;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.num {
+  font-size: 44rpx;
+  font-weight: bold;
+}
+/* 数字颜色 */
+.cell-0    { background: #1a1a2e; }
+.cell-2    { background: #eee4da; color: #776e65; }
+.cell-4    { background: #ede0c8; color: #776e65; }
+.cell-8    { background: #f2b179; color: #fff; }
+.cell-16   { background: #f59563; color: #fff; }
+.cell-32   { background: #f67c5f; color: #fff; }
+.cell-64   { background: #f65e3b; color: #fff; }
+.cell-128  { background: #edcf72; color: #fff; font-size: 36rpx; }
+.cell-256  { background: #edcc61; color: #fff; font-size: 36rpx; }
+.cell-512  { background: #edc850; color: #fff; font-size: 36rpx; }
+.cell-1024 { background: #edc53f; color: #fff; font-size: 28rpx; }
+.cell-2048 { background: #edc22e; color: #fff; font-size: 28rpx; box-shadow: 0 0 30rpx #f3d96b; }
+.cell-big  { background: linear-gradient(135deg, #f79711, #f95306); color: #fff; font-size: 22rpx; }
+.tip {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 16rpx;
+}
+.btn-row {
+  display: flex;
+  gap: 30rpx;
+  margin-top: 30rpx;
+}
+.btn-restart {
+  background: linear-gradient(135deg, #f79711, #f95306);
+  color: #fff;
+  font-size: 28rpx;
+  padding: 16rpx 50rpx;
+  border-radius: 50rpx;
+  border: none;
+  font-weight: bold;
+}
+.btn-share {
+  background: #fe2c55;
+  color: #fff;
+  font-size: 28rpx;
+  padding: 16rpx 50rpx;
+  border-radius: 50rpx;
+  border: none;
+  font-weight: bold;
+}
+/* 弹窗 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.overlay-box {
+  background: #16213e;
+  border-radius: 30rpx;
+  padding: 60rpx;
+  text-align: center;
+  border: 4rpx solid #0f3460;
+  width: 560rpx;
+}
+.overlay-title {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+.overlay-title.win { color: #f79711; }
+.overlay-title.lose { color: #f95306; }
+.overlay-sub {
+  color: #aaa;
+  font-size: 28rpx;
+  margin-bottom: 30rpx;
+}
+.overlay-score {
+  color: #f79711;
+  font-size: 36rpx;
+  margin-bottom: 40rpx;
+}

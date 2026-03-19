@@ -1,0 +1,10 @@
+{
+  "appid": "tt646212dffa0348b102",
+  "name": "方块合成大师",
+  "versionName": "1.0.0",
+  "versionCode": "1",
+  "description": "经典2048数字合成游戏，滑动合并方块，挑战你的反应和策略！",
+  "gameEngine": "Cocos",
+  "categories": ["休闲", "益智"],
+  "tags": ["2048", "益智", "合成", "休闲", "方块", "数字"]
+}

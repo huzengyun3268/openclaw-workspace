@@ -1,0 +1,38 @@
+<!-- 数字合成2048游戏页面 -->
+<view class="page">
+
+  <view class="title">数字合成 2048</view>
+
+  <view class="score-row">
+    <view>得分：<text class="score-num">{{score}}</text></view>
+    <view>最高：<text class="score-num">{{best}}</text></view>
+  </view>
+
+  <!-- 游戏棋盘 -->
+  <view class="board" catchtouchstart="touchStart" catchtouchend="touchEnd">
+    <view class="row" tt:for="{{grid}}" tt:for-item="row" tt:for-index="ri">
+      <view class="cell cell-{{row[ci]}}" tt:for="{{row}}" tt:for-item="val" tt:for-index="ci">
+        <text class="num">{{val || ''}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="tip">👆 滑动屏幕合并相同数字</view>
+
+  <!-- 操作按钮 -->
+  <view class="btn-row">
+    <button class="btn-restart" bindtap="restart">重新开始</button>
+    <button class="btn-share" open-type="share">分享好友</button>
+  </view>
+
+  <!-- 游戏结束弹窗 -->
+  <view class="overlay" tt:if="{{gameOver}}">
+    <view class="overlay-box">
+      <view class="overlay-title {{isWin ? 'win' : 'lose'}}">{{isWin ? '🎉 2048达成！' : '游戏结束'}}</view>
+      <view class="overlay-sub">{{isWin ? '太厉害了！再挑战更高分！' : '没有可移动的位置了'}}</view>
+      <view class="overlay-score">本局得分：{{score}}</view>
+      <button class="btn-restart" bindtap="restart">再来一局</button>
+    </view>
+  </view>
+
+</view>
