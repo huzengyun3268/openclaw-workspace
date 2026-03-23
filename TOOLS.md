@@ -1,40 +1,23 @@
 # TOOLS.md - Local Notes
 
-Skills define _how_ tools work. This file is for _your_ specifics — the stuff that's unique to your setup.
+## SMTP邮件配置
+- 邮箱: 66096170@qq.com
+- 授权码: qsluszirhwibbhcb
+- SMTP: smtp.qq.com:587 (SSL)
+- 脚本: C:\Users\Administrator\Desktop\sendmail3.ps1
 
-## What Goes Here
+## 摄像头
 
-Things like:
+## SSH
 
-- Camera names and locations
-- SSH hosts and aliases
-- Preferred voices for TTS
-- Speaker/room names
-- Device nicknames
-- Anything environment-specific
+## TTS
 
-## Examples
+## 扬声器/房间
 
-```markdown
-### Cameras
-
-- living-room → Main area, 180° wide angle
-- front-door → Entrance, motion-triggered
-
-### SSH
-
-- home-server → 192.168.1.100, user: admin
-
-### TTS
-
-- Preferred voice: "Nova" (warm, slightly British)
-- Default speaker: Kitchen HomePod
-```
-
-## Why Separate?
-
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
+## 设备昵称
 
 ---
 
-Add whatever helps you do your job. This is your cheat sheet.
+## 其他
+- 发送邮件时使用 PowerShell System.Net.Mail，需用 [System.Reflection.Assembly]::LoadWithPartialName("System.Net.Mail")
+- 文件编码：中文txt文件用GB2312读取，再用UTF8保存

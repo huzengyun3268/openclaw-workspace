@@ -1,121 +1,90 @@
-// 股票早报生成脚本
-const https = require('https');
-const http = require('http');
-
 const stocks = [
-  { name: '特变电工', code: '600089', cost: 24.765, shares: 52300 },
-  { name: '浙江龙盛', code: '600352', cost: 15.912, shares: 141700 },
-  { name: '锡华科技', code: '603248', cost: 35.490, shares: 2000 },
-  { name: '同花顺', code: '300033', cost: 511.220, shares: 600 },
-  { name: '神农种业', code: '300189', cost: 17.099, shares: 5000 },
-  { name: '亿能电力', code: '920046', cost: 35.936, shares: 12731 },
-  { name: '普适导航', code: '831330', cost: 20.415, shares: 6370 },
-  { name: '圣博润', code: '430046', cost: 0.478, shares: 10334 },
+  {name:'特变电工', code:'600089', cost:24.765, shares:52300},
+  {name:'浙江龙盛', code:'600352', cost:15.912, shares:141700},
+  {name:'锡华科技', code:'603248', cost:35.490, shares:2000},
+  {name:'同花顺', code:'300033', cost:511.220, shares:600},
+  {name:'神农种业', code:'300189', cost:17.099, shares:5000},
+  {name:'亿能电力', code:'920046', cost:35.936, shares:12731},
+  {name:'普适导航', code:'831330', cost:20.415, shares:6370},
+  {name:'圣博润', code:'430046', cost:0.478, shares:10334},
 ];
 
-// 北交所股票用bj后缀，其他用sh/sz前缀
-function getStockCode(code) {
-  if (code.startsWith('9')) return 'bj' + code;
-  if (code.startsWith('6')) return 'sh' + code;
-  return 'sz' + code;
-}
-
-function fetchStockPrice(code) {
-  return new Promise((resolve, reject) => {
-    const fullCode = getStockCode(code);
-    const url = `https://qt.gtimg.cn/q=${fullCode}`;
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          // 格式: v_sh600089="...."
-          const match = data.match(/"([^"]+)"/);
-          if (!match) return reject(new Error('No data for ' + code));
-          const fields = match[1].split('~');
-          if (fields.length < 40) return reject(new Error('Invalid data for ' + code));
-          const price = parseFloat(fields[3]); // 现价
-          const prevClose = parseFloat(fields[4]); // 昨收
-          const changePercent = prevClose > 0 ? ((price - prevClose) / prevClose * 100).toFixed(2) : '0.00';
-          resolve({ price, changePercent, prevClose });
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
-  });
-}
-
-function getTrendEmoji(pct) {
-  const p = parseFloat(pct);
-  if (p > 2) return '🔴';
-  if (p > 0) return '🔴';
-  if (p === 0) return '⚪';
-  if (p > -2) return '🟢';
-  return '🟢';
+async function getPrice(code) {
+  try {
+    const res = await fetch('http://hq.sinajs.cn/list=' + code);
+    const text = await res.text();
+    const m = text.match(/"([^"]+)"/);
+    if (!m) return null;
+    const parts = m[1].split(',');
+    return parseFloat(parts[3]) || 0;
+  } catch(e) { return null; }
 }
 
 async function main() {
-  console.log('📊 股票早报 - ' + new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }));
-  console.log('='.repeat(50));
-
-  let totalCost = 0;
-  let totalValue = 0;
-  const lines = [];
-
-  for (const stock of stocks) {
-    try {
-      const { price, changePercent } = await fetchStockPrice(stock.code);
-      const value = price * stock.shares;
-      const cost = stock.cost * stock.shares;
-      const profit = value - cost;
-      const profitRate = (profit / cost * 100).toFixed(2);
-      const trend = getTrendEmoji(changePercent);
-
-      totalCost += cost;
-      totalValue += value;
-
-      const changeSign = parseFloat(changePercent) >= 0 ? '+' : '';
-      const profitSign = profit >= 0 ? '+' : '';
-
-      lines.push({
-        trend,
-        name: stock.name,
-        price: price.toFixed(3),
-        change: `${changeSign}${changePercent}%`,
-        cost: stock.cost.toFixed(3),
-        profit: `${profitSign}${profit.toFixed(2)}`,
-        profitRate: `${profitSign}${profitRate}%`,
-        shares: stock.shares,
-      });
-      console.log(`${trend} ${stock.name}(${stock.code}): 现价=${price}, 涨跌=${changePercent}%, 成本=${stock.cost}, 盈亏=${profit}(${profitRate}%)`);
-    } catch (e) {
-      console.error(`获取 ${stock.name}(${stock.code}) 失败: ${e.message}`);
-      lines.push({ name: stock.name, code: stock.code, error: e.message });
-    }
-    await new Promise(r => setTimeout(r, 200));
+  const prices = [];
+  for (const s of stocks) {
+    const price = await getPrice(s.code);
+    prices.push({...s, price: price || s.cost});
+    await new Promise(r => setTimeout(r, 300));
   }
 
-  const totalProfit = totalValue - totalCost;
-  const totalProfitRate = (totalProfit / totalCost * 100).toFixed(2);
-  const totalSign = totalProfit >= 0 ? '+' : '';
+  let totalCost = 0, totalValue = 0, totalPnL = 0;
+  let lines = [];
 
-  console.log('='.repeat(50));
-  console.log(`合计: 总市值=${totalValue.toFixed(2)}, 总成本=${totalCost.toFixed(2)}, 总盈亏=${totalSign}${totalProfit.toFixed(2)}(${totalSign}${totalProfitRate}%)`);
+  for (const s of prices) {
+    const costAmt = s.cost * s.shares;
+    const value = s.price * s.shares;
+    const pnl = value - costAmt;
+    const pnlPct = (pnl / costAmt) * 100;
+    totalCost += costAmt;
+    totalValue += value;
+    totalPnL += pnl;
 
-  // 生成飞书消息
-  const feishuMsg = lines.map(l => {
-    if (l.error) return `• ${l.name}(${l.code}): 获取行情失败`;
-    return `${l.trend} ${l.name} 现价${l.price}(${l.change}) 成本${l.cost} 盈亏${l.profit}(${l.profitRate}%)`;
-  }).join('\n');
+    const sign = pnl >= 0 ? '+' : '';
+    const arrow = pnl >= 0 ? '▲' : '▼';
+    lines.push({
+      name: s.name,
+      price: s.price.toFixed(3),
+      priceChange: pnlPct.toFixed(2),
+      cost: s.cost.toFixed(3),
+      pnl: pnl.toFixed(2),
+      pnlPct: pnlPct.toFixed(2),
+      arrow: arrow,
+      sign: sign
+    });
+  }
 
-  const summary = `📈 股票早报 ${new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n${feishuMsg}\n\n💰 合计盈亏: ${totalSign}${totalProfit.toFixed(2)}元 (${totalSign}${totalProfitRate}%)`;
+  const totalPnLPct = (totalPnL / totalCost) * 100;
 
-  console.log('\n--- 飞书消息 ---');
-  console.log(summary);
+  // Generate markdown for Feishu
+  let msg = `📊 **股票早报** | ${new Date().toLocaleDateString('zh-CN', {year:'numeric', month:'2-digit', day:'2-digit'})}\n\n`;
 
-  // 保存到文件供调用方使用
-  require('fs').writeFileSync('stock_report.txt', summary, 'utf8');
+  for (const l of lines) {
+    const sign = l.sign;
+    const arrow = l.arrow;
+    const pnlStr = `${sign}${l.pnl}元 (${sign}${l.pnlPct}%)`;
+    msg += `**${l.name}**(${l.code})\n`;
+    msg += `  现价 ${l.price}  ${arrow} ${l.priceChange}%\n`;
+    msg += `  成本 ${l.cost}  |  盈亏 ${pnlStr}\n\n`;
+  }
+
+  const totalSign = totalPnL >= 0 ? '+' : '';
+  const totalArrow = totalPnL >= 0 ? '▲' : '▼';
+  msg += `──────────────────\n`;
+  msg += `**合计**  总市值 ${totalValue.toFixed(2)}元  总成本 ${totalCost.toFixed(2)}元\n`;
+  msg += `${totalArrow} 总盈亏 ${totalSign}${totalPnL.toFixed(2)}元 (${totalSign}${totalPnLPct.toFixed(2)}%)\n`;
+
+  console.log(msg);
+
+  // Also output JSON for programmatic use
+  console.log('\n---JSON---');
+  console.log(JSON.stringify({
+    stocks: lines,
+    totalCost: totalCost.toFixed(2),
+    totalValue: totalValue.toFixed(2),
+    totalPnL: totalPnL.toFixed(2),
+    totalPnLPct: totalPnLPct.toFixed(2)
+  }));
 }
 
-main().catch(console.error);
+main();
