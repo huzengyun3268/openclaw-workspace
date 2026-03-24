@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 import akshare as ak
 import pandas as pd
 pd.set_option('display.max_columns', None)
@@ -33,9 +35,9 @@ for name, code in stocks:
             vol = row['成交额'].values[0]
             high = row['最高'].values[0]
             low = row['最低'].values[0]
-            emoji = '\U0001f534' if pct < -3 else ('\U0001f7e1' if pct < 0 else '\U0001f7e2')
+            emoji = 'RED' if pct < -3 else ('YEL' if pct < 0 else 'GRN')
             print(f'{emoji} {name}({code}): {price:.3f}  {pct:+.2f}%  最高:{high} 最低:{low}  额:{vol}')
         else:
-            print(f'\u274c {name}({code}): no data')
+            print(f'ERR {name}({code}): no data')
     except Exception as e:
-        print(f'\u274c {name}({code}): ERROR {e}')
+        print(f'ERR {name}({code}): ERROR {e}')
