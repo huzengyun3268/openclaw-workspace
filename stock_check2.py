@@ -1,61 +1,60 @@
 # -*- coding: utf-8 -*-
-import requests
+import akshare as ak
+import pandas as pd
+from datetime import datetime
 
-stocks = ['600352', '600089', '301667', '920046', '300033', '831330', '300189', '430046']
-names = ['浙江龙盛', '特变电工', '纳百川', '亿能电力', '同花顺', '普适导航', '神农种业', '圣博润']
-shares = [106700, 52300, 3000, 12731, 600, 6370, 5000, 10334]
-costs = [15.91, 24.765, 82.715, 35.936, 511.22, 20.415, 17.099, 0.478]
+stocks = {
+    '600352': ('浙江龙盛', 15.91, 106700),
+    '600089': ('特变电工', 24.765, 52300),
+    '301667': ('纳百川', 82.715, 3000),
+    '920046': ('亿能电力', 35.936, 12731),
+    '300033': ('同花顺', 511.22, 600),
+    '831330': ('普适导航', 20.415, 6370),
+    '300189': ('神农种业', 17.099, 5000),
+    '430046': ('圣博润', 0.478, 10334),
+}
 
-fs_codes = []
-for c in stocks:
-    if c.startswith('6'):
-        fs_codes.append('sh' + c)
-    elif c.startswith('9'):
-        fs_codes.append('bj' + c)
-    else:
-        fs_codes.append('sz' + c)
+stocks2 = {
+    '600114': ('东睦股份(老婆)', 32.428, 9200),
+    '301638': ('南网数字(老婆)', 32.635, 1700),
+}
 
-url = 'https://hq.sinajs.cn/list=' + ','.join(fs_codes)
-headers = {'Referer': 'https://finance.sina.com.cn'}
+all_codes = list(stocks.keys()) + list(stocks2.keys())
+now = datetime.now().strftime('%H:%M:%S')
+print(f'[{now}] Fetching data...')
+
 try:
-    r = requests.get(url, headers=headers, timeout=10)
-    r.encoding = 'gbk'
-    lines = r.text.strip().split('\n')
-    print('=== 持仓监控 2026-03-24 14:30 ===')
-    total_m = 0.0
-    total_c = 0.0
-    total_p = 0.0
-    for i, line in enumerate(lines):
-        parts = line.split('=')
-        if len(parts) < 2:
-            print(names[i] + '(' + stocks[i] + '): 数据获取失败')
-            continue
-        data = parts[1].strip('";\n\r ')
-        fields = data.split(',')
-        if len(fields) > 4:
-            price = float(fields[3])
-            prev = float(fields[2])
-            chg = (price - prev) / prev * 100
-            cost = costs[i]
-            m = price * shares[i]
-            p = (price - cost) * shares[i]
-            pct = (price - cost) / cost * 100
-            sign_c = '+' if chg >= 0 else ''
-            sign_p = '+' if p >= 0 else ''
-            msg = '%s(%s): 现价=%.3f 涨跌=%s%.2f%% | 市值=%.0f 盈亏=%s%.0f(%s%.1f%%)' % (
-                names[i], stocks[i], price, sign_c, chg, m, sign_p, p, sign_p, pct)
-            print(msg)
-            total_m += m
-            total_c += cost * shares[i]
-            total_p += p
+    df = ak.stock_zh_a_spot_em()
+    print('\n=== MY ACCOUNT ===')
+    total_pl = 0
+    for code, (name, cost, qty) in stocks.items():
+        row = df[df['代码'] == code]
+        if not row.empty:
+            price = float(row['最新价'].values[0])
+            change = float(row['涨跌幅'].values[0])
+            market_val = price * qty
+            cost_val = cost * qty
+            pl = market_val - cost_val
+            pl_pct = (price - cost) / cost * 100
+            total_pl += pl
+            print(f'{code} {name}: price={price:.3f} change={change:+.2f}% qty={qty} cost={cost:.3f} pl={pl:+.2f} pl_pct={pl_pct:+.1f}%')
         else:
-            print(names[i] + '(' + stocks[i] + '): 数据不完整 ' + data)
-    sign_tp = '+' if total_p >= 0 else ''
-    total_pct = total_p / total_c * 100
-    sign_tpp = '+' if total_pct >= 0 else ''
-    print('\n--- 合计 ---')
-    msg2 = '总市值: %.0f | 总成本: %.0f | 总盈亏: %s%.0f(%s%.1f%%)' % (
-        total_m, total_c, sign_tp, total_p, sign_tpp, total_pct)
-    print(msg2)
+            print(f'{code} {name}: NO_DATA')
+
+    print(f'Account total PL: {total_pl:+.2f}')
+
+    print('\n=== WIFE ACCOUNT ===')
+    for code, (name, cost, qty) in stocks2.items():
+        row = df[df['代码'] == code]
+        if not row.empty:
+            price = float(row['最新价'].values[0])
+            change = float(row['涨跌幅'].values[0])
+            market_val = price * qty
+            cost_val = cost * qty
+            pl = market_val - cost_val
+            pl_pct = (price - cost) / cost * 100
+            print(f'{code} {name}: price={price:.3f} change={change:+.2f}% qty={qty} cost={cost:.3f} pl={pl:+.2f} pl_pct={pl_pct:+.1f}%')
+        else:
+            print(f'{code} {name}: NO_DATA')
 except Exception as e:
-    print('获取失败: ' + str(e))
+    print(f'Error: {e}')
