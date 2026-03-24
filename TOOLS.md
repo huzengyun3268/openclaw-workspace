@@ -18,6 +18,10 @@
 
 ---
 
+## 股票交易注意事项
+- A股T+1制度：当天买的股票当天不能卖，需下一个交易日才能卖出
+- 提醒用户时必须同时说明T+1规则
+
 ## 其他
 - 发送邮件时使用 PowerShell System.Net.Mail，需用 [System.Reflection.Assembly]::LoadWithPartialName("System.Net.Mail")
 - 文件编码：中文txt文件用GB2312读取，再用UTF8保存
