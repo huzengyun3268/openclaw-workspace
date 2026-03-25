@@ -1,62 +1,80 @@
 # -*- coding: utf-8 -*-
-import akshare as ak
-import pandas as pd
-from datetime import datetime
+import requests
+import json
+import time
 
-stocks = {
-    '600352': ('浙江龙盛', 15.91, 106700),
-    '600089': ('特变电工', 24.765, 52300),
-    '301667': ('纳百川', 82.715, 3000),
-    '920046': ('亿能电力', 35.936, 12731),
-    '300033': ('同花顺', 511.22, 600),
-    '831330': ('普适导航', 20.415, 6370),
-    '300189': ('神农种业', 17.099, 5000),
-    '430046': ('圣博润', 0.478, 10334),
+stocks_main = {
+    '600352': {'name': 'ZheJiangLongSheng', 'hold': 106700, 'cost': 15.952, 'stop': 12.0},
+    '300033': {'name': 'TongHuaShun', 'hold': 1200, 'cost': 423.488, 'stop': 280},
+    '831330': {'name': 'PuShiDaoHang', 'hold': 7370, 'cost': 20.361, 'stop': 0},
+    '000988': {'name': 'HuaGongKeJi', 'hold': 1000, 'cost': 116.87, 'stop': 0},
+    '688295': {'name': 'ZhongFuShenYing', 'hold': 1500, 'cost': 37.843, 'stop': 0},
+    '600487': {'name': 'HengTongGuangDian', 'hold': 2000, 'cost': 42.391, 'stop': 0},
+    '300499': {'name': 'GaoLanGuFen', 'hold': 1500, 'cost': 41.625, 'stop': 38.0},
+    '601168': {'name': 'XiBuKuangYe', 'hold': 2000, 'cost': 24.863, 'stop': 0},
+    '600893': {'name': 'HangFaDongLi', 'hold': 1000, 'cost': 47.196, 'stop': 0},
+    '920046': {'name': 'YiNengDianLi', 'hold': 200, 'cost': 329.555, 'stop': 27},
+    '430046': {'name': 'ShengBoRun', 'hold': 10334, 'cost': 0.478, 'stop': 0},
 }
 
-stocks2 = {
-    '600114': ('东睦股份(老婆)', 32.428, 9200),
-    '301638': ('南网数字(老婆)', 32.635, 1700),
+stocks_margin = {
+    '600089': {'name': 'TeBianDianGong', 'hold': 52300, 'cost': 24.765, 'stop': 25.0},
 }
 
-all_codes = list(stocks.keys()) + list(stocks2.keys())
-print(f'[{datetime.now().strftime("%H:%M:%S")}] 正在查询...')
+stocks_wife = {
+    '600114': {'name': 'DongMuGuFen', 'hold': 4800, 'cost': 26.2, 'stop': 25.0},
+    '301638': {'name': 'NanWangShuZi', 'hold': 1700, 'cost': 32.635, 'stop': 28.0},
+}
 
-try:
-    df = ak.stock_zh_a_spot_em()
-    print('\n=== 我的账户 ===')
-    total_pl = 0
-    for code, (name, cost, qty) in stocks.items():
-        row = df[df['代码'] == code]
-        if not row.empty:
-            price = float(row['最新价'].values[0])
-            change = float(row['涨跌幅'].values[0])
-            amount = float(row['成交额'].values[0]) / 1e8
-            market_val = price * qty
-            cost_val = cost * qty
-            pl = market_val - cost_val
-            pl_pct = (price - cost) / cost * 100
-            total_pl += pl
-            status = '🔴' if change < -3 else ('🟡' if change < 0 else '🟢')
-            print(f'{status} {code} {name}: 现价={price:.3f} 涨跌={change:+.2f}% 持仓={qty}股 成本={cost:.3f} 盈亏={pl:+.2f}元({pl_pct:+.1f}%)')
-        else:
-            print(f'⚪ {code} {name}: 未找到数据')
-    
-    print(f'\n账户总盈亏: {total_pl:+.2f} 元')
+all_codes = list(stocks_main.keys()) + list(stocks_margin.keys()) + list(stocks_wife.keys())
 
-    print('\n=== 老婆账户 ===')
-    for code, (name, cost, qty) in stocks2.items():
-        row = df[df['代码'] == code]
-        if not row.empty:
-            price = float(row['最新价'].values[0])
-            change = float(row['涨跌幅'].values[0])
-            market_val = price * qty
-            cost_val = cost * qty
-            pl = market_val - cost_val
-            pl_pct = (price - cost) / cost * 100
-            status = '🔴' if change < -3 else ('🟡' if change < 0 else '🟢')
-            print(f'{status} {code} {name}: 现价={price:.3f} 涨跌={change:+.2f}% 持仓={qty}股 成本={cost:.3f} 盈亏={pl:+.2f}元({pl_pct:+.1f}%)')
+# Use eastmoney API directly
+codes_str = ','.join([f'"{c}"' for c in all_codes])
+
+for attempt in range(3):
+    try:
+        url = 'https://push2.eastmoney.com/api/qt/ulist.np/get'
+        params = {
+            'fltt': 2,
+            'invt': 2,
+            'fields': 'f12,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18',
+            'secids': ','.join([f'1.{c}' if not c.startswith('4') and not c.startswith('8') and not c.startswith('9') else f'0.{c}' for c in all_codes])
+        }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://quote.eastmoney.com/'
+        }
+        
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
+        data = resp.json()
+        
+        if data.get('data') and data['data'].get('diff'):
+            items = data['data']['diff']
+            for item in items:
+                code = item.get('f12', '')
+                name = item.get('f14', '')
+                price = item.get('f2', 0) / 100 if item.get('f2') else 0
+                change_pct = item.get('f3', 0) / 100 if item.get('f3') else 0
+                high = item.get('f15', 0) / 100 if item.get('f15') else 0
+                low = item.get('f16', 0) / 100 if item.get('f16') else 0
+                vol = item.get('f5', 0)
+                amount = item.get('f6', 0)
+                
+                # Get cost and stop from our data
+                info = stocks_main.get(code) or stocks_margin.get(code) or stocks_wife.get(code)
+                cost = info['cost'] if info else 0
+                stop = info['stop'] if info else 0
+                hold = info['hold'] if info else 0
+                
+                profit = (price - cost) * hold if price and cost else 0
+                stop_warning = ' **STOP**' if stop and price <= stop else ''
+                
+                print(f'{code} {name}: price={price:.3f} change={change_pct:+.2f}% high={high:.3f} low={low:.3f} cost={cost:.3f} stop={stop} profit={profit:+.0f}{stop_warning}')
         else:
-            print(f'⚪ {code} {name}: 未找到数据')
-except Exception as e:
-    print(f'Error: {e}')
+            print(f'No data returned: {data}')
+        break
+    except Exception as e:
+        print(f'Attempt {attempt+1} failed: {e}')
+        if attempt < 2:
+            time.sleep(3)
