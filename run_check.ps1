@@ -1,2 +1,4 @@
-$python = "C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe"
-& $python "C:\Users\Administrator\.openclaw\workspace\check_stocks.py"
+$env:PYTHONIOENCODING = "utf-8"
+$pythonExe = "C:\Program Files\Python311\python.exe"
+$scriptPath = "C:\Users\Administrator\.openclaw\workspace\stock_check.py"
+& $pythonExe $scriptPath

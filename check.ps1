@@ -1,0 +1,5 @@
+﻿#auction check
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$s = @('600352','300033','831330','000988','688295','600487','300499','601168','600893','920046','430046','600114','301638','600089')
+$n = @('浙江龙盛','同花顺','普适导航','华工科技','中复神鹰','亨通光电','高澜股份','西部矿业','航发动力','亿能电力','圣博润','东睦股份','南网数字','特变电工')
+for($i=0;$i -lt $s.Count;$i++){$c=$s[$i];$nm=$n[$i];try{$p=if($c.StartsWith('6')-or$c.StartsWith('9')){'1'}else{'0'};$u=https://push2.eastmoney.com/api/qt/stock/get?secid=$p.$c&fields=f43,f44,f45,f46,f170;$d=(Invoke-RestMethod -Uri $u -TimeoutSec 5).data;$pr=[math]::Round($d.f43/100,2);$pc=[math]::Round($d.f170/100,2);$o=[math]::Round($d.f46/100,2);$h=[math]::Round($d.f44/100,2);$l=[math]::Round($d.f45/100,2);$sg=if($pc -ge 0){'+'}else{''};Write-Output ($nm+'|$c+'$pr+|$sg$pc%|O=$o H=$h L=$l')}catch{Write-Output ($nm+'|$c+'|ERR')}}

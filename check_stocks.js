@@ -1,50 +1,49 @@
-const http = require('http');
-const iconv = require('iconv-lite');
+const https = require('http');
+const { TextDecoder } = require('util');
+const td = new TextDecoder('gbk');
 
-const codes = [
-  'sh600352',  // 浙江龙盛
-  'sh600089',  // 特变电工
-  'sh300033',  // 同花顺
-  'bj920046',  // 亿能电力
-  'sh831330',  // 普适导航
-  'sh430046'   // 圣博润
-];
+const stockMap = {
+  'sh600352': { name: 'ZJLS', cost: 15.952, stop: 12.0 },
+  'sz300033': { name: 'THS', cost: 423.488, stop: 280 },
+  'sh831330': { name: 'PSDH', cost: 20.361, stop: 0 },
+  'sz000988': { name: 'HGKJ', cost: 116.87, stop: 0 },
+  'sh688295': { name: 'ZFSC', cost: 37.843, stop: 0 },
+  'sh600487': { name: 'HTGD', cost: 42.391, stop: 0 },
+  'sz300499': { name: 'GLGF', cost: 41.625, stop: 38.0 },
+  'sh601168': { name: 'XBKY', cost: 24.863, stop: 0 },
+  'sh600893': { name: 'HFDC', cost: 47.196, stop: 0 },
+  'bj920046': { name: 'YNDL', cost: 329.555, stop: 27 },
+  'bj430046': { name: 'SBR', cost: 0.478, stop: 0 },
+  'sh600089': { name: 'TBDG', cost: 24.765, stop: 25.0 },
+  'sh600114': { name: 'DMGF', cost: 32.428, stop: 25.0 },
+  'sz301638': { name: 'NWSZ', cost: 32.635, stop: 28.0 },
+};
 
-const path = '/list=' + codes.join(',');
-const options = { hostname: 'hq.sinajs.cn', path, headers: { 'Referer': 'http://finance.sina.com.cn', 'User-Agent': 'Mozilla/5.0' } };
-
-http.get(options, res => {
-  let data = '';
-  res.on('data', chunk => data += chunk);
+const codes = Object.keys(stockMap).join(',');
+const url = 'http://hq.sinajs.cn/list=' + codes;
+https.get(url, { 'headers': { 'Referer': 'http://finance.sina.com.cn', 'User-Agent': 'Mozilla/5.0' } }, res => {
+  let d = [];
+  res.on('data', c => d.push(c));
   res.on('end', () => {
-    const buf = Buffer.from(data);
-    const str = iconv.decode(buf, 'GBK');
-    const lines = str.trim().split('\n');
-    let found = false;
-    lines.forEach(line => {
-      const idx = line.indexOf('="');
-      if (idx > 0) {
-        const code = line.substring(8, idx);
-        const content = line.substring(idx + 2, line.length - 2);
-        const fields = content.split(',');
-        if (fields[1] && fields[1] !== '0.000' && fields[1] !== '-') {
-          const name = fields[0];
-          const price = fields[1];
-          const pct = parseFloat(fields[3]).toFixed(2);
-          const high = fields[4];
-          const low = fields[5];
-          const open = fields[6];
-          const prev = fields[2];
-          const time = (fields[30] || '') + ' ' + (fields[31] || '');
-          const arrow = pct >= 0 ? '+' : '';
-          const color = pct > 0 ? '🟢' : pct < 0 ? '🔴' : '🟡';
-          console.log(color + ' ' + name + '(' + code + ') | 现价:' + price + ' | ' + arrow + pct + '% | 开:' + open + ' | 高:' + high + ' | 低:' + low + ' | ' + time);
-          found = true;
-        }
+    const buf = Buffer.concat(d);
+    const str = td.decode(buf);
+    const lines = str.split('\n');
+    let results = [];
+    lines.forEach(l => {
+      const m = l.match(/hq_str_(\w+)="([^"]+)"/);
+      if (m) {
+        const parts = m[2].split(',');
+        const code = m[1];
+        const info = stockMap[code];
+        if (!info) return;
+        const price = parseFloat(parts[3]);
+        const yesterday = parseFloat(parts[2]);
+        const chg = (price - yesterday).toFixed(3);
+        const pct = ((price - yesterday) / yesterday * 100).toFixed(2);
+        const pnl = ((price - info.cost) * (code.startsWith('bj') ? 1 : 1)).toFixed(0);
+        const alert = (info.stop > 0 && price <= info.stop) ? ' STOP!' : '';
+        console.log(info.name + '|' + price + '|' + chg + '|' + pct + '|' + pnl + '|' + alert);
       }
     });
-    if (!found) {
-      console.log('数据未更新，等待09:30开盘，当前时间: ' + new Date().toLocaleTimeString());
-    }
   });
-}).on('error', e => console.log('Error: ' + e.message));
+}).on('error', e => console.log(e));

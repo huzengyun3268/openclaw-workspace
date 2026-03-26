@@ -1,25 +1,40 @@
 # -*- coding: utf-8 -*-
-import akshare as ak
-import pandas as pd
+import urllib.request
+import json
 
-codes = ['600352', '300033', '831330', '000988', '688295', '600487', '300499', '601168', '600893', '920046', '430046', '600114', '301638', '600089']
-results = []
-for code in codes:
-    try:
-        df = ak.stock_zh_a_spot_em()
-        row = df[df['代码'] == code]
-        if not row.empty:
-            name = row['名称'].values[0]
-            price = row['最新价'].values[0]
-            chg = row['涨跌幅'].values[0]
-            high = row['最高'].values[0]
-            low = row['最低'].values[0]
-            amount = row['成交额'].values[0]
-            results.append(f'{code}|{name}|{price}|{chg}|{high}|{low}|{amount}')
+stocks = {
+    '600352': '浙江龙盛',
+    '300033': '同花顺',
+    '831330': '普适导航',
+    '000988': '华工科技',
+    '688295': '中复神鹰',
+    '600487': '亨通光电',
+    '300499': '高澜股份',
+    '601168': '西部矿业',
+    '600893': '航发动力',
+    '920046': '亿能电力',
+    '430046': '圣博润',
+    '600089': '特变电工',
+    '600114': '东睦股份',
+    '301638': '南网数字',
+}
+
+codes = list(stocks.keys())
+url = 'http://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f12,f14&secids=' + ','.join(codes)
+req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+try:
+    with urllib.request.urlopen(req, timeout=10) as r:
+        data = json.loads(r.read())
+    items = data.get('data', {}).get('diff', [])
+    for item in items:
+        code = item.get('f12', '')
+        name = stocks.get(code, code)
+        price = item.get('f2', 0)
+        chg = item.get('f3', 0)
+        chg_pct = item.get('f4', 0)
+        if price and price != '-':
+            print(f"{name}({code}): {price} 涨跌:{chg}% 涨跌幅:{chg_pct}%")
         else:
-            results.append(f'{code}|NOT_FOUND|N/A')
-    except Exception as e:
-        results.append(f'{code}|ERROR|{e}')
-
-for r in results:
-    print(r)
+            print(f"{name}({code}): 无数据")
+except Exception as e:
+    print(f'Error: {e}')
