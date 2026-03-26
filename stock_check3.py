@@ -1,62 +1,97 @@
-import requests
-import json
+# -*- coding: utf-8 -*-
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# Use eastmoney real-time API
-codes = {
-    '600352': ('浙江龙盛', 15.952, 12.0),
-    '300033': ('同花顺', 423.488, 280.0),
-    '688295': ('中复神鹰', 37.843, 0),
-    '600487': ('亨通光电', 42.391, 0),
-    '300499': ('高澜股份', 41.625, 38.0),
-    '601168': ('西部矿业', 24.863, 0),
-    '600893': ('航发动力', 47.196, 0),
-    '600089': ('特变电工', 24.765, 25.0),
-    '600114': ('东睦股份', 25.9, 25.0),
-    '301638': ('南网数字', 32.635, 28.0),
-}
+import akshare as ak
 
-# Batch query using eastmoney API
-url = "https://push2.eastmoney.com/api/qt/ulist.np/get"
-params = {
-    'fltt': 2,
-    'invt': 2,
-    'fields': 'f1,f2,f3,f4,f12,f14',
-    'secids': ','.join([f'1.{k}' for k in codes.keys()])
-}
+# Use single data fetch
+df = ak.stock_zh_a_spot_em()
+cols = df.columns.tolist()
+# Find code column
+code_col = None
+name_col = None
+for c in cols:
+    if c in ['代码', 'code']:
+        code_col = c
+    if c in ['名称', 'name', '股票名称']:
+        name_col = c
 
-try:
-    resp = requests.get(url, params=params, timeout=10)
-    data = resp.json()
-    items = data.get('data', {}).get('diff', [])
-    
-    print(f"{'名称':<10} {'现价':>8} {'涨跌幅':>8} {'成本':>8} {'盈亏额':>10} {'止损价':>8} {'状态'}")
-    print('-' * 75)
-    
-    for item in items:
-        code = item['f12']
-        name = codes[code][0]
-        price = item['f2']
-        chg_pct = item['f3']
-        cost = codes[code][1]
-        stop = codes[code][2]
-        
-        if price == '-':
-            status = '停牌'
-            pnl = 0
-        else:
-            price = float(price)
-            chg_pct = float(chg_pct) if chg_pct != '-' else 0
-            pnl = (price - cost) * 100  # approximate for 100 shares
-            if price <= stop and stop > 0:
-                status = '⚠️触及止损'
-            elif price < cost * 0.95:
-                status = '⚠️接近成本'
-            elif chg_pct < -2:
-                status = '⚠️跌幅较大'
-            else:
-                status = '正常'
-        
-        print(f"{name:<10} {price:>8} {chg_pct:>+7.2f}% {cost:>8.3f} {pnl:>+10.1f} {stop if stop else '-':>8} {status}")
-        
-except Exception as e:
-    print(f"Error: {e}")
+print(f'列名: {cols[:10]}')
+
+# Main account positions
+main_stocks = [
+    ('600352', '浙江龙盛', 106700, 15.952, 12.0),
+    ('300033', '同花顺', 1200, 423.488, 280),
+    ('831330', '普适导航', 7370, 20.361, 0),
+    ('000988', '华工科技', 1000, 116.87, 0),
+    ('688295', '中复神鹰', 1500, 37.843, 0),
+    ('600487', '亨通光电', 2000, 42.391, 0),
+    ('300499', '高澜股份', 1500, 41.625, 38.0),
+    ('601168', '西部矿业', 2000, 24.863, 0),
+    ('600893', '航发动力', 1000, 47.196, 0),
+    ('920046', '亿能电力', 200, 329.555, 27),
+    ('430046', '圣博润', 10334, 0.478, 0),
+]
+
+# Margin account
+margin_stocks = [
+    ('600089', '特变电工', 52300, 24.765, 25.0),
+]
+
+# Wife account
+wife_stocks = [
+    ('600114', '东睦股份', 4800, 26.5, 25.0),
+    ('301638', '南网数字', 1700, 32.635, 28.0),
+]
+
+print()
+print('=== 主账户持仓 ===')
+total_pnl = 0
+for code, name, vol, cost, stop in main_stocks:
+    row = df[df[code_col] == code]
+    if not row.empty:
+        price = float(row['最新价'].values[0])
+        chg = float(row['涨跌幅'].values[0])
+        pnl = (price - cost) * vol
+        total_pnl += pnl
+        flag = ''
+        if stop > 0 and price <= stop:
+            flag = ' ⚠️止损位'
+        elif price < cost * 0.9:
+            flag = ' ⚠️亏>10%'
+        print(f'{name}({code}): {price:.2f} {chg:+.2f}% 浮:{pnl:+.0f}元{flag}')
+    else:
+        print(f'{name}({code}): 数据未找到')
+
+print()
+print(f'主账户浮动盈亏合计: {total_pnl:+.0f}元')
+print()
+print('=== 两融账户持仓 ===')
+for code, name, vol, cost, stop in margin_stocks:
+    row = df[df[code_col] == code]
+    if not row.empty:
+        price = float(row['最新价'].values[0])
+        chg = float(row['涨跌幅'].values[0])
+        pnl = (price - cost) * vol
+        flag = ''
+        if price <= stop:
+            flag = ' ⚠️止损位'
+        print(f'{name}({code}): {price:.2f} {chg:+.2f}% 浮:{pnl:+.0f}元{flag}')
+    else:
+        print(f'{name}({code}): 数据未找到')
+
+print()
+print('=== 老婆账户持仓 ===')
+for code, name, vol, cost, stop in wife_stocks:
+    row = df[df[code_col] == code]
+    if not row.empty:
+        price = float(row['最新价'].values[0])
+        chg = float(row['涨跌幅'].values[0])
+        pnl = (price - cost) * vol
+        flag = ''
+        if price <= stop:
+            flag = ' ⚠️止损位'
+        print(f'{name}({code}): {price:.2f} {chg:+.2f}% 浮:{pnl:+.0f}元{flag}')
+    else:
+        print(f'{name}({code}): 数据未找到')
