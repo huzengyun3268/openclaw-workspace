@@ -1,71 +1,104 @@
 import requests
-from datetime import datetime
+import json
 
-stocks = [
-    ('浙江龙盛', '600352', '1'),
-    ('同花顺', '300033', '0'),
-    ('华工科技', '000988', '0'),
-    ('中复神鹰', '688295', '1'),
-    ('亨通光电', '600487', '1'),
-    ('高澜股份', '300499', '0'),
-    ('西部矿业', '601168', '1'),
-    ('航发动力', '600893', '1'),
-    ('亿能电力', '920046', '0'),
-    ('普适导航', '831330', '0'),
-    ('圣博润', '430046', '0'),
-    # 老婆账户
-    ('东睦股份', '600114', '1'),
-    ('南网数字', '301638', '0'),
-]
-
-print(f"=== 持仓监控 {datetime.now().strftime('%H:%M:%S')} ===\n")
-
-results = []
-for name, code, mkt in stocks:
-    try:
-        secid = f'{mkt}.{code}'
-        url = f'http://push2.eastmoney.com/api/qt/stock/get?secid={secid}&fields=f43,f170,f57,f58'
-        resp = requests.get(url, timeout=10)
-        d = resp.json()
-        if d.get('data'):
-            # f43 = price (可能需要/100), f170 = 涨跌幅(/100)
-            raw_price = d['data'].get('f43', 0)
-            raw_chg = d['data'].get('f170', 0)
-            
-            # 判断是否需要/100 - 如果价格>10000大概是以"分"为单位
-            if raw_price > 10000:
-                price = raw_price / 1000
-                change = raw_chg / 100
-            elif raw_price > 100:
-                price = raw_price / 100
-                change = raw_chg / 100
-            else:
-                price = raw_price
-                change = raw_chg
-            
-            results.append((name, code, price, change))
-            print(f"{name}({code}): {price:.2f} ({change:+.2f}%)")
-        else:
-            print(f"{name}({code}): 无数据")
-            results.append((name, code, None, None))
-    except Exception as e:
-        print(f"{name}({code}): 错误-{e}")
-        results.append((name, code, None, None))
-
-print()
-print("=== 止损位检查 ===")
-stop_loss = {
-    '600352': ('浙江龙盛', 12.0),
-    '300033': ('同花顺', 280.0),
-    '300499': ('高澜股份', 38.0),
-    '920046': ('亿能电力', 27.0),
-    '600114': ('东睦股份', 25.0),
-    '301638': ('南网数字', 28.0),
+# All holdings with actual share counts
+# Main account (3293)
+main_stocks = {
+    '600352': ('浙江龙盛', 15.952, 12.0, 106700),
+    '300033': ('同花顺', 423.488, 280.0, 1200),
+    '688295': ('中复神鹰', 37.843, 0, 1500),
+    '600487': ('亨通光电', 42.391, 0, 2000),
+    '300499': ('高澜股份', 41.625, 38.0, 1500),
+    '601168': ('西部矿业', 24.863, 0, 2000),
+    '600893': ('航发动力', 47.196, 0, 1000),
+    '600089': ('特变电工(两融)', 24.765, 25.0, 52300),
 }
-for name, code, price, change in results:
-    if code in stop_loss and price is not None:
-        nm, sl = stop_loss[code]
-        if price <= sl:
-            print(f"[ALERT] {nm}({code}) 现价{price:.2f} <= 止损位{sl} !")
+
+# Wife account (3293)
+wife_stocks = {
+    '600114a': ('东睦股份(老仓)', 32.428, 0, 200),
+    '600114b': ('东睦股份(新仓)', 25.9, 25.0, 4600),
+    '301638': ('南网数字', 32.635, 28.0, 1700),
+}
+
+all_stocks = {**main_stocks, **wife_stocks}
+
+# Batch query using eastmoney API
+url = "https://push2.eastmoney.com/api/qt/ulist.np/get"
+secids = '1.600352,1.300033,1.688295,1.600487,1.300499,1.601168,1.600893,1.600089,1.600114,1.301638'
+params = {
+    'fltt': 2,
+    'invt': 2,
+    'fields': 'f1,f2,f3,f4,f12,f14',
+    'secids': secids
+}
+
+try:
+    resp = requests.get(url, params=params, timeout=10)
+    data = resp.json()
+    items = data.get('data', {}).get('diff', [])
+    
+    # Use ASCII-safe status indicators
+    print('{:<16} {:>7} {:>8} {:>7} {:>6} {:>7} {:>10} {}'.format(
+        '名称', '现价', '涨跌幅', '成本', '止损', '持仓', '盈亏额', '状态'))
+    print('-' * 85)
+    
+    total_pnl = 0
+    alerts = []
+    
+    for item in items:
+        code = item['f12']
+        matched_key = None
+        for k in all_stocks:
+            if k.startswith(code):
+                matched_key = k
+                break
+        
+        if not matched_key:
+            continue
+            
+        name, cost, stop, shares = all_stocks[matched_key]
+        price_val = item['f2']
+        chg_pct = item['f3']
+        
+        if price_val == '-' or price_val == 0:
+            status = '[停牌]'
+            price_f = 0
+            pnl = 0
         else:
-            print(f"  {nm}({code}) 现价{price:.2f} > 止损位{sl} [OK]")
+            price_f = float(price_val)
+            chg_pct_f = float(chg_pct) if chg_pct != '-' else 0
+            pnl = (price_f - cost) * shares
+            
+            if stop > 0 and price_f <= stop:
+                status = '[!!止损!!]'
+                alerts.append(f"{name} 触及止损价 {stop}，现价 {price_f}")
+            elif price_f < cost * 0.95:
+                status = '[!接近成本]'
+                alerts.append(f"{name} 接近成本价 {cost}，现价 {price_f}")
+            elif chg_pct_f < -3:
+                status = '[!大跌]'
+                alerts.append(f"{name} 大幅下跌 {chg_pct_f:.2f}%，现价 {price_f}")
+            elif chg_pct_f > 5:
+                status = '[**大涨**]'
+            else:
+                status = ''
+        
+        total_pnl += pnl
+        chg_str = '{:+.2f}%'.format(chg_pct_f) if chg_pct != '-' else '-'
+        stop_str = '{:.1f}'.format(stop) if stop > 0 else '-'
+        print('{:<16} {:>7.3f} {:>8} {:>7.3f} {:>6} {:>7} {:>+10.1f} {}'.format(
+            name, price_f, chg_str, cost, stop_str, shares, pnl, status))
+    
+    print('-' * 85)
+    print('{:<65} {:>+10.1f} 元'.format('合计浮动盈亏', total_pnl))
+    
+    if alerts:
+        print('\n=== 预警 ===')
+        for a in alerts:
+            print('  ' + a)
+    
+except Exception as e:
+    print('Error: {}'.format(e))
+    import traceback
+    traceback.print_exc()
