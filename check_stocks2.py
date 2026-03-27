@@ -1,88 +1,68 @@
 # -*- coding: utf-8 -*-
 import requests
-import time
+import json
 
-# 东方财富实时行情API
-def get_stock_price(code):
-    # 判断市场前缀
-    if code.startswith('6'):
-        symbol = f'sh{code}'
-    elif code.startswith('0') or code.startswith('3'):
-        symbol = f'sz{code}'
-    else:
-        symbol = f'bj{code}'
+# Stock codes and positions
+stocks_info = {
+    '600352': ('浙江龙盛', 16.52, 12.0, 86700),
+    '600893': ('航发动力', 49.184, 42.0, 9000),
+    '300033': ('同花顺', 423.488, 280, 1200),
+    '601168': ('西部矿业', 26.169, 22.0, 11000),
+    '831330': ('普适导航', 20.361, 18.0, 7370),
+    '600487': ('亨通光电', 43.998, 38.0, 3000),
+    '688295': ('中复神鹰', 37.843, None, 1500),
+    '920046': ('亿能电力', 329.553, 27, 200),
+    '430046': ('圣博润', 0.478, None, 10334),
+    '600089': ('特变电工', 24.765, 25.0, 52300),
+}
+
+# Try eastmoney quote API
+codes = ','.join(stocks_info.keys())
+url = f'https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f4,f5,f6,f12,f14&secids=1.{codes}'
+
+try:
+    resp = requests.get(url, timeout=10)
+    data = resp.json()
     
-    url = f'http://push2.eastmoney.com/api/qt/stock/get?secid=1.{code if not code.startswith("6") else code}&fields=f43,f170,f171,f47,f48,f57,f58,f107,f50,f44,f45,f46,f51,f52&ut=fa5fd1943c7b386f172d6893dbfba10b&fltt=2&invt=2'
-    # 用更简单的接口
-    api_url = f'http://push2.eastmoney.com/api/qt/stock/get?secid=1.{code if code.startswith("6") else code}&fields=f43,f57,f58,f107,f50,f44,f45,f46&ut=fa5fd1943c7b386f172d6893dbfba10b&fltt=2&invt=2'
+    print('=== 持仓行情监控 2026-03-27 13:00 ===')
+    print()
     
-    # 尝试不同格式
-    if code.startswith('6'):
-        secid = f'1.{code}'
-    elif code.startswith('0') or code.startswith('3'):
-        secid = f'0.{code}'
-    elif code.startswith('8') or code.startswith('4'):
-        secid = f'0.{code}'
-    else:
-        secid = f'1.{code}'
+    results = data.get('data', {}).get('diff', [])
     
-    url = f'http://push2.eastmoney.com/api/qt/stock/get?secid={secid}&fields=f43,f57,f58,f107,f170,f171,f47,f48,f50,f44,f45,f46&ut=fa5fd1943c7b386f172d6893dbfba10b&fltt=2&invt=2'
+    total_pl = 0
+    alerts = []
     
-    try:
-        resp = requests.get(url, timeout=5)
-        data = resp.json()
-        if data.get('data'):
-            d = data['data']
-            return {
-                'code': code,
-                'name': d.get('f58', ''),
-                'price': d.get('f43', 0) / 100 if d.get('f43') else 0,
-                'chg': d.get('f170', 0) / 100 if d.get('f170') else 0,
-                'pct': d.get('f171', 0) / 100 if d.get('f171') else 0,
-                'high': d.get('f44', 0) / 100 if d.get('f44') else 0,
-                'low': d.get('f45', 0) / 100 if d.get('f45') else 0,
-                'open': d.get('f46', 0) / 100 if d.get('f46') else 0,
-                'vol': d.get('f47', 0),
-                'amount': d.get('f48', 0),
-            }
-    except Exception as e:
-        pass
-    return None
-
-# 主账户持仓
-holdings_main = [
-    ('600352', '浙江龙盛', 15.952, 106700),
-    ('300033', '同花顺', 423.488, 1200),
-    ('831330', '普适导航', 20.361, 7370),
-    ('000988', '华工科技', 116.87, 1000),
-    ('688295', '中复神鹰', 37.843, 1500),
-    ('600487', '亨通光电', 42.391, 2000),
-    ('300499', '高澜股份', 41.625, 1500),
-    ('601168', '西部矿业', 24.863, 2000),
-    ('600893', '航发动力', 47.196, 1000),
-    ('920046', '亿能电力', 329.555, 200),
-    ('430046', '圣博润', 0.478, 10334),
-]
-
-# 两融账户
-holdings_margin = [
-    ('600089', '特变电工', 24.765, 52300),
-]
-
-# 老婆账户
-holdings_wife = [
-    ('600114', '东睦股份', 32.428, 200),
-    ('600114', '东睦股份(2)', 25.9, 4600),
-    ('301638', '南网数字', 32.635, 1700),
-]
-
-all_codes = list(set([h[0] for h in holdings_main + holdings_margin + holdings_wife]))
-
-print('Fetching stock prices...')
-for code in all_codes:
-    result = get_stock_price(code)
-    if result:
-        print(f"{result['code']}|{result['name']}|{result['price']}|{result['pct']}|{result['high']}|{result['low']}|{result['amount']}")
-    else:
-        print(f"{code}|ERROR")
-    time.sleep(0.3)
+    for item in results:
+        code = item.get('f12', '')
+        name = item.get('f14', '')
+        price = item.get('f2', 0)
+        change_pct = item.get('f3', 0)
+        
+        if code in stocks_info:
+            cost, stop, shares = stocks_info[code]
+            if price and price > 0:
+                pl = (price - cost) * shares
+                total_pl += pl
+                
+                status = '正常'
+                if stop and price <= stop:
+                    status = '⚠️ 止损!'
+                    alerts.append(f'【止损】{name}({code}) 现价{price} <= 止损价{stop}')
+                elif stop and price <= cost * 0.95:
+                    status = '⚠️ 接近止损'
+                
+                arrow = '↑' if change_pct > 0 else '↓' if change_pct < 0 else '-'
+                print(f'{status} {code} {name}: {price}({arrow}{abs(change_pct):.2f}%) | 成本{cost} | 盈亏{pl:+,.0f}元 | {shares}股')
+    
+    print()
+    print(f'浮动盈亏合计: {total_pl:+,.0f}元')
+    
+    if alerts:
+        print()
+        for a in alerts:
+            print(a)
+            
+except Exception as e:
+    print(f'Error: {e}')
+    import traceback
+    traceback.print_exc()

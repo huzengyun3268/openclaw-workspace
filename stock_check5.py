@@ -1,104 +1,85 @@
-import requests
+# -*- coding: utf-8 -*-
+import urllib.request
 import json
 
-# All holdings with actual share counts
-# Main account (3293)
-main_stocks = {
-    '600352': ('浙江龙盛', 15.952, 12.0, 106700),
-    '300033': ('同花顺', 423.488, 280.0, 1200),
-    '688295': ('中复神鹰', 37.843, 0, 1500),
-    '600487': ('亨通光电', 42.391, 0, 2000),
-    '300499': ('高澜股份', 41.625, 38.0, 1500),
-    '601168': ('西部矿业', 24.863, 0, 2000),
-    '600893': ('航发动力', 47.196, 0, 1000),
-    '600089': ('特变电工(两融)', 24.765, 25.0, 52300),
+codes = [
+    ('sh600352', 16.52, 120000, '止损12.0'),
+    ('sh600893', 49.184, 9000, '止损42.0'),
+    ('sz300033', 423.488, 1200, '止损280'),
+    ('sh601168', 26.169, 11000, '止损22.0'),
+    ('bj831330', 20.361, 7370, '止损18.0'),
+    ('sh600487', 43.998, 3000, '止损38.0'),
+    ('sh688295', 37.843, 1500, ''),
+    ('bj920046', 329.553, 200, '观察'),
+    ('bj430046', 0.478, 10334, ''),
+]
+
+names = {
+    'sh600352': '浙江龙盛', 'sh600893': '航发动力', 'sz300033': '同花顺',
+    'sh601168': '西部矿业', 'bj831330': '普适导航', 'sh600487': '亨通光电',
+    'sh688295': '中复神鹰', 'bj920046': '亿能电力', 'bj430046': '圣博润',
 }
 
-# Wife account (3293)
-wife_stocks = {
-    '600114a': ('东睦股份(老仓)', 32.428, 0, 200),
-    '600114b': ('东睦股份(新仓)', 25.9, 25.0, 4600),
-    '301638': ('南网数字', 32.635, 28.0, 1700),
-}
+url = 'https://hq.sinajs.cn/list=' + ','.join([c[0] for c in codes])
 
-all_stocks = {**main_stocks, **wife_stocks}
+req = urllib.request.Request(url, headers={
+    'User-Agent': 'Mozilla/5.0',
+    'Referer': 'https://finance.sina.com.cn',
+})
 
-# Batch query using eastmoney API
-url = "https://push2.eastmoney.com/api/qt/ulist.np/get"
-secids = '1.600352,1.300033,1.688295,1.600487,1.300499,1.601168,1.600893,1.600089,1.600114,1.301638'
-params = {
-    'fltt': 2,
-    'invt': 2,
-    'fields': 'f1,f2,f3,f4,f12,f14',
-    'secids': secids
-}
-
+results = {}
 try:
-    resp = requests.get(url, params=params, timeout=10)
-    data = resp.json()
-    items = data.get('data', {}).get('diff', [])
+    resp = urllib.request.urlopen(req, timeout=15)
+    raw = resp.read()
+    try:
+        content = raw.decode('gbk')
+    except:
+        content = raw.decode('utf-8', errors='replace')
     
-    # Use ASCII-safe status indicators
-    print('{:<16} {:>7} {:>8} {:>7} {:>6} {:>7} {:>10} {}'.format(
-        '名称', '现价', '涨跌幅', '成本', '止损', '持仓', '盈亏额', '状态'))
-    print('-' * 85)
-    
-    total_pnl = 0
-    alerts = []
-    
-    for item in items:
-        code = item['f12']
-        matched_key = None
-        for k in all_stocks:
-            if k.startswith(code):
-                matched_key = k
-                break
-        
-        if not matched_key:
+    for line in content.strip().split('\n'):
+        if '=' not in line:
             continue
-            
-        name, cost, stop, shares = all_stocks[matched_key]
-        price_val = item['f2']
-        chg_pct = item['f3']
-        
-        if price_val == '-' or price_val == 0:
-            status = '[停牌]'
-            price_f = 0
-            pnl = 0
-        else:
-            price_f = float(price_val)
-            chg_pct_f = float(chg_pct) if chg_pct != '-' else 0
-            pnl = (price_f - cost) * shares
-            
-            if stop > 0 and price_f <= stop:
-                status = '[!!止损!!]'
-                alerts.append(f"{name} 触及止损价 {stop}，现价 {price_f}")
-            elif price_f < cost * 0.95:
-                status = '[!接近成本]'
-                alerts.append(f"{name} 接近成本价 {cost}，现价 {price_f}")
-            elif chg_pct_f < -3:
-                status = '[!大跌]'
-                alerts.append(f"{name} 大幅下跌 {chg_pct_f:.2f}%，现价 {price_f}")
-            elif chg_pct_f > 5:
-                status = '[**大涨**]'
-            else:
-                status = ''
-        
-        total_pnl += pnl
-        chg_str = '{:+.2f}%'.format(chg_pct_f) if chg_pct != '-' else '-'
-        stop_str = '{:.1f}'.format(stop) if stop > 0 else '-'
-        print('{:<16} {:>7.3f} {:>8} {:>7.3f} {:>6} {:>7} {:>+10.1f} {}'.format(
-            name, price_f, chg_str, cost, stop_str, shares, pnl, status))
-    
-    print('-' * 85)
-    print('{:<65} {:>+10.1f} 元'.format('合计浮动盈亏', total_pnl))
-    
-    if alerts:
-        print('\n=== 预警 ===')
-        for a in alerts:
-            print('  ' + a)
-    
+        var = line.split('=')[0].replace('hq_str_', '').strip()
+        try:
+            data = line.split('"')[1]
+        except:
+            continue
+        fields = data.split(',')
+        if len(fields) < 5:
+            continue
+        price = float(fields[3])
+        prev = float(fields[2])
+        chg = (price - prev) / prev * 100
+        results[var] = {'price': price, 'chg': chg}
 except Exception as e:
-    print('Error: {}'.format(e))
-    import traceback
-    traceback.print_exc()
+    pass
+
+# Build output
+output_lines = []
+output_lines.append("=== 主账户持仓 13:30 ===")
+for code, cost, qty, stop in codes:
+    name = names.get(code, code)
+    if code in results:
+        r = results[code]
+        p = r['price']
+        c = r['chg']
+        pl = (p - cost) * qty
+        pl_str = f"{pl:+.0f}"
+        alert = ""
+        if stop and '止损' in stop and p < float(stop.replace('止损','')):
+            alert = " **预警**"
+        output_lines.append(f"{name}: {p}  {c:+.2f}%  浮动{pl_str}元{alert}")
+    else:
+        output_lines.append(f"{name}: N/A")
+
+# 亿能电力单独说明
+if 'bj920046' in results:
+    r = results['bj920046']
+    output_lines.append(f"\n亿能电力({r['price']}): 成本329.55，跌幅极大，止损观察中")
+
+content_out = '\n'.join(output_lines)
+print(content_out)
+
+# Save to file
+with open('C:/Users/Administrator/.openclaw/workspace/stock_result.txt', 'w', encoding='utf-8') as f:
+    f.write(content_out)

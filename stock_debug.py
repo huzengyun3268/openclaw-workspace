@@ -1,43 +1,44 @@
 # -*- coding: utf-8 -*-
-import requests
-from datetime import datetime
+import urllib.request
 
-stocks = {
-    '600352': ('浙江龙盛', 106700, 15.91),
-    '600089': ('特变电工', 52300, 24.765),
-    '301667': ('纳百川', 3000, 82.715),
-    '920046': ('亿能电力', 12731, 35.936),
-    '300033': ('同花顺', 600, 511.22),
-    '831330': ('普适导航', 6370, 20.415),
-    '300189': ('神农种业', 5000, 17.099),
-    '430046': ('圣博润', 10334, 0.478),
-    '600114': ('东睦股份_老婆', 9200, 32.428),
-    '301638': ('南网数字_老婆', 1700, 32.635),
-}
+codes = ['sh600352', 'sh600893', 'sz300033', 'sh601168', 'bj831330', 'sh600487', 'sh688295', 'bj920046', 'bj430046']
+url = 'https://hq.sinajs.cn/list=' + ','.join(codes)
 
-# Build code mapping
-code_list = []
-for code in stocks:
-    if code.startswith('6'):
-        code_list.append('sh' + code)
-    elif code.startswith('92'):
-        code_list.append('bj' + code)
-    elif code.startswith('83') or code.startswith('43'):
-        code_list.append('bj' + code)
-    else:
-        code_list.append('sz' + code)
+req = urllib.request.Request(url, headers={
+    'User-Agent': 'Mozilla/5.0',
+    'Referer': 'https://finance.sina.com.cn',
+})
 
-codes_str = ','.join(code_list)
-url = 'https://qt.gtimg.cn/q=' + codes_str
-
-print('URL: ' + url)
-
+results = {}
 try:
-    resp = requests.get(url, timeout=15)
-    resp.encoding = 'gbk'
-    raw = resp.text
-    print('Response length: ' + str(len(raw)))
-    print('First 500 chars:')
-    print(raw[:500])
+    resp = urllib.request.urlopen(req, timeout=15)
+    raw = resp.read()
+    content = raw.decode('gbk', errors='replace')
+    
+    for line in content.strip().split('\n'):
+        print(f"LINE: {line[:200]}")
+        if '=' not in line:
+            continue
+        var = line.split('=')[0].replace('hq_str_', '').strip()
+        print(f"VAR: {var}")
+        try:
+            idx1 = line.index('"')
+            idx2 = line.index('"', idx1+1)
+            data = line[idx1+1:idx2]
+        except:
+            print("  PARSE ERROR")
+            continue
+        fields = data.split(',')
+        print(f"  fields count: {len(fields)}, fields[0]={fields[0]}, [1]={fields[1]}, [3]={fields[3] if len(fields)>3 else 'N/A'}")
+        if len(fields) >= 6:
+            price = float(fields[3])
+            prev_close = float(fields[1])
+            chg = (price - prev_close) / prev_close * 100
+            results[var] = {'price': price, 'chg': chg}
+            print(f"  -> price={price}, chg={chg:.2f}%")
 except Exception as e:
-    print('API请求失败: ' + str(e))
+    print(f"Error: {e}")
+
+print("\n=== RESULTS ===")
+for k, v in results.items():
+    print(f"{k}: {v}")

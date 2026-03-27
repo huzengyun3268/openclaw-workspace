@@ -1,54 +1,69 @@
 # -*- coding: utf-8 -*-
 import requests
-import json
-import sys
+import warnings
+warnings.filterwarnings('ignore')
 
-# 用东方财富实时接口
-codes = ['600352', '300033', '000988', '688295', '600487', '300499', '601168', '600893', '920046']
+stocks = [
+    ('\u6d59\u6c5f\u9f99\u76db', '600352'),
+    ('\u822a\u53d1\u52a8\u529b', '600893'),
+    ('\u540c\u82b1\u987a', '300033'),
+    ('\u897f\u90e8\u77ff\u4e1a', '601168'),
+    ('\u666e\u9002\u5bfc\u822a', '831330'),
+    ('\u4ea8\u901a\u5149\u7535', '600487'),
+    ('\u4e2d\u590d\u795e\u9e7f', '688295'),
+    ('\u4ebf\u80fd\u7535\u529b', '920046'),
+    ('\u5723\u535a\u6da6', '430046'),
+    ('\u7279\u53d8\u7535\u529b', '600089'),
+    ('\u4e1c\u58e4\u80a1\u4efd', '600114'),
+    ('\u5357\u7f51\u6570\u5b57', '301638'),
+]
 
-def get_stock_data(code):
-    # 判断市场前缀
-    if code.startswith('6') or code.startswith('9'):
-        market = 'sh'
-    elif code.startswith('0') or code.startswith('3'):
-        market = 'sz'
+# Convert to secid format for eastmoney
+secids = []
+for name, code in stocks:
+    if code.startswith('6'):
+        secids.append(f'1.{code}')
+    elif code.startswith('9'):
+        secids.append(f'0.{code}')
     else:
-        market = 'bj'
-    
-    url = f"http://push2.eastmoney.com/api/qt/stock/get?secid={market}.{code}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f60,f107,f169,f170"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'http://quote.eastmoney.com/'
-    }
-    try:
-        r = requests.get(url, headers=headers, timeout=5)
-        data = r.json()
-        if data and data.get('data'):
-            d = data['data']
-            name = d.get('f58', code)
-            price = d.get('f43', '-')  # 最新价
-            open_p = d.get('f60', '-')  # 今开
-            high = d.get('f44', '-')   # 最高
-            low = d.get('f45', '-')    # 最低
-            vol = d.get('f47', '-')    # 成交量(手)
-            change = d.get('f169', '-')  # 涨跌额
-            pct = d.get('f170', '-')   # 涨跌幅
-            # 转换价格单位：价格*100
-            if price != '-':
-                price = float(price) / 100
-            if open_p != '-':
-                open_p = float(open_p) / 100
-            if high != '-':
-                high = float(high) / 100
-            if low != '-':
-                low = float(low) / 100
-            if pct != '-':
-                pct = round(float(pct) / 100, 2)
-            if change != '-':
-                change = round(float(change) / 100, 2)
-            return f"{code} {name}: 现价={price} 今开={open_p} 涨跌幅={pct}% 最高={high} 最低={low}"
-    except Exception as e:
-        return f"{code}: 获取失败 {e}"
+        secids.append(f'0.{code}')
 
-for code in codes:
-    print(get_stock_data(code))
+secid_str = ','.join(secids)
+
+url = f'https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&secids={secid_str}&fields=f2,f3,f4,f5,f6,f7,f8,f12,f14&ut=fa5fd1943c7b386f172d6893dbfba10b&cb=jQuery&_=1'
+
+try:
+    resp = requests.get(url, timeout=10)
+    text = resp.text
+    # Parse JSONP
+    import json
+    start = text.find('(')
+    end = text.rfind(')')
+    data = json.loads(text[start+1:end])
+    
+    print('=== \u96c6\u5408\u7ade\u4ef7\u76d1\u63a7 09:25 ===')
+    print(f'\u65f6\u95f4: 2026-03-27')
+    print()
+    
+    items = data.get('data', {}).get('diff', [])
+    for item in items:
+        code = item.get('f12', '')
+        name = item.get('f14', '')
+        price = item.get('f2', 0)
+        chg_pct = item.get('f3', 0)
+        amount = item.get('f6', 0)
+        
+        if price and price != '-' and price != 0:
+            price_str = f'{price}'
+            chg_str = f'{chg_pct}'
+            amount_str = f'{amount/1e8:.2f}\u4ebf' if amount else 'N/A'
+            print(f'{name}({code}): \u73b0\u4ef7={price_str} \u6da8\u6da6\u5e45={chg_str}% \u6210\u4ea4\u989d={amount_str}')
+        else:
+            print(f'{name}({code}): \u6682\u65e0\u6570\u636e')
+    
+    print()
+    print('=== \u5173\u6ce8\u4e8b\u9879 ===')
+    print('\u26a0\ufe0f \u4ebf\u80fd\u7535\u529b: \u6b63\u80fd\u529b\u5e02\uff0c\u4eca\u65e5\u5fc5\u987b\u6e05\u4ed3\uff01')
+    
+except Exception as e:
+    print(f'\u9519\u8bef: {e}')
