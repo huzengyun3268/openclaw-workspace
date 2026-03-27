@@ -1,76 +1,67 @@
-# -*- coding: utf-8 -*-
-import akshare as ak
-import pandas as pd
+import requests
+import json
+import time
 
 stocks = [
-    ('600352', '浙江龙盛', 13.180, 12.0),
-    ('600893', '航发动力', 47.960, 42.0),
-    ('300033', '同花顺', 295.52, 280),
-    ('601168', '西部矿业', 25.04, 22.0),
-    ('831330', '普适导航', 19.97, 18.0),
-    ('600487', '亨通光电', 48.01, 38.0),
-    ('688295', '中复神鹰', 61.04, None),
-    ('920046', '亿能电力', 28.20, None),
-    ('430046', '圣博润', 0.30, None),
-    ('600089', '特变电工', None, 25.0),
-    ('600114', '东睦股份', None, 25.0),
-    ('301638', '南网数字', None, 28.0),
+    ('sh600352', '浙江龙盛'),
+    ('sh600893', '航发动力'),
+    ('sz300033', '同花顺'),
+    ('sh601168', '西部矿业'),
+    ('sh600487', '亨通光电'),
+    ('sh688295', '中复神鹰'),
+    ('sh600114', '东睦股份'),
+    ('sz301638', '南网数字'),
+    ('sh600089', '特变电工'),
 ]
 
-print("获取实时行情...")
-try:
-    df = ak.stock_zh_a_spot_em()
-    print(f"成功获取 {len(df)} 只股票数据")
-except Exception as e:
-    print(f"获取数据失败: {e}")
-    df = None
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+}
 
-print("\n=== 主账户持仓 ===")
-if df is not None:
-    for code, name, last_price, stop_loss in stocks[:9]:
-        try:
-            row = df[df['代码'] == code]
-            if not row.empty:
-                price = float(row['最新价'].values[0])
-                chg_pct = float(row['涨跌幅'].values[0])
-                vol = row['成交量'].values[0]
-                if stop_loss:
-                    distance = (price - stop_loss) / price * 100
-                    warn = " ⚠️ 止损附近!" if distance < 5 else ""
-                    print(f"{name}({code}): 现价={price} | 涨跌={chg_pct}% | 止损={stop_loss} | 距止损={distance:.1f}%{warn}")
-                else:
-                    print(f"{name}({code}): 现价={price} | 涨跌={chg_pct}%")
-            else:
-                print(f"{name}({code}): 未找到数据")
-        except Exception as e:
-            print(f"{name}({code}): 获取失败 {e}")
-
-print("\n=== 两融账户 ===")
-if df is not None:
-    code, name, last_price, stop_loss = stocks[9]
+# 腾讯财经API
+for code, name in stocks:
     try:
-        row = df[df['代码'] == code]
-        if not row.empty:
-            price = float(row['最新价'].values[0])
-            chg_pct = float(row['涨跌幅'].values[0])
-            distance = (price - stop_loss) / price * 100
-            warn = " ⚠️ 止损附近!" if distance < 5 else ""
-            print(f"{name}({code}): 现价={price} | 涨跌={chg_pct}% | 止损={stop_loss} | 距止损={distance:.1f}%{warn}")
+        url = f'https://qt.gtimg.cn/q={code}'
+        resp = requests.get(url, headers=headers, timeout=8)
+        text = resp.text.strip()
+        parts = text.split('~')
+        if len(parts) > 4 and parts[1] != '':
+            price = float(parts[3]) if parts[3] else 0
+            chg_pct = float(parts[32]) if len(parts) > 32 and parts[32] else 0
+            print(f'{name}({code}): {price:.2f} ({chg_pct:+.2f}%)')
+        else:
+            print(f'{name}({code}): 无数据 - {text[:80]}')
     except Exception as e:
-        print(f"{name}({code}): 获取失败 {e}")
+        print(f'{name}({code}): 失败 - {e}')
+    time.sleep(0.5)
 
-print("\n=== 老婆账户 ===")
-if df is not None:
-    for code, name, last_price, stop_loss in stocks[10:]:
-        try:
-            row = df[df['代码'] == code]
-            if not row.empty:
-                price = float(row['最新价'].values[0])
-                chg_pct = float(row['涨跌幅'].values[0])
-                distance = (price - stop_loss) / price * 100
-                warn = " ⚠️ 止损附近!" if distance < 5 else ""
-                print(f"{name}({code}): 现价={price} | 涨跌={chg_pct}% | 止损={stop_loss} | 距止损={distance:.1f}%{warn}")
-            else:
-                print(f"{name}({code}): 未找到数据")
-        except Exception as e:
-            print(f"{name}({code}): 获取失败 {e}")
+# 尝试东方财富API作为备选
+print('\n=== 东方财富API ===')
+stocks2 = [
+    ('1.600352', '浙江龙盛'),
+    ('1.600893', '航发动力'),
+    ('0.300033', '同花顺'),
+    ('1.601168', '西部矿业'),
+    ('1.600487', '亨通光电'),
+    ('1.688295', '中复神鹰'),
+    ('1.600114', '东睦股份'),
+    ('0.301638', '南网数字'),
+    ('1.600089', '特变电工'),
+]
+for secid, name in stocks2:
+    try:
+        url = f'https://push2.eastmoney.com/api/qt/stock/get?secid={secid}&fields=f43,f169,f170,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b'
+        resp = requests.get(url, headers=headers, timeout=8)
+        data = resp.json()
+        if data.get('data'):
+            d = data['data']
+            price = (d.get('f43', 0)) / 100
+            chg = (d.get('f169', 0)) / 100
+            chg_pct = (d.get('f170', 0)) / 100
+            print(f'{name}({secid}): {price:.2f} ({chg_pct:+.2f}%)')
+        else:
+            print(f'{name}({secid}): 无数据')
+    except Exception as e:
+        print(f'{name}({secid}): 失败 - {e}')
+    time.sleep(0.5)
