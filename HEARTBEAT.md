@@ -51,6 +51,28 @@
 5. 下午2:30买入中国平安600019，1-2成仓，目标6.44，止损6.24
 6. 周二（4/1）上午10点前必须卖出中国平安
 
+## 技能安装状态（2026-03-29 06:53 更新）
+- Skill Creator ✅ 已存在
+- Agent Teams Playbook ✅ 已装
+- Autoresearch ✅ 已装（v1.0.2）
+- Agency Agents ✅ 已装（v1.0.2）
+- minimax-xlsx ✅ 之前已有
+- minimax-docx ✅ 之前已有
+- minimax-pdf ✅ 之前已有
+- pptx-generator ✅ 已装（v1.0.2）
+- blogwatcher ✅ 刚装好
+- stock-filter-skills ✅ 已存在
+- image-gen ✅ 已存在
+- amap-lbs-skill ✅ 刚装好（需配置高德API Key）
+- awesome-ai-agent ❌ ClaWHub搜不到，需确认名称
+- nano-pdf ⏰ 待装（ClaWHub限速）
+
+## 今日记录（2026-03-29）
+- 美以伊战局第29天：谈判全面破产，地面部队悬念上升
+- 封面图生成3张（war_cover_0329 v1/v2/v3），已发邮件
+- 视频文案已发邮件
+- amap-lbs-skill 已装，需高德API Key
+
 ## 用户操作风格
 - 严格执行T+1，当天买第二天才能卖
 - 短线策略：下午2:30买，第二天开盘前卖
