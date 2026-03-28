@@ -5,7 +5,7 @@
   "trigger": "cron",
   "schedule": "0 30 8 * * 1-5",
   "enabled": true,
-  "channel": "webchat",
+  "channel": "openclaw-weixin",
   "model": "minimax/MiniMax-M2.5-highspeed",
   "thinking": false,
   "prompt_file": "SKILL.md",
