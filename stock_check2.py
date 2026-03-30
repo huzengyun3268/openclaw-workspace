@@ -1,93 +1,26 @@
-# -*- coding: utf-8 -*-
 import akshare as ak
-import time
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-codes = ['600352', '600893', '300033', '601168', '831330', '600487', '688295', '920046', '430046', '600089', '600114', '301638']
-names = {
-    '600352': '浙江龙盛', '600893': '航发动力', '300033': '同花顺',
-    '601168': '西部矿业', '831330': '普适导航', '600487': '亨通光电',
-    '688295': '中复神鹰', '920046': '亿能电力', '430046': '圣博润',
-    '600089': '特变电工', '600114': '东睦股份', '301638': '南网数字'
-}
+# Get major indices
+try:
+    indices = ak.stock_zh_index_spot_em()
+    major = indices[indices['代码'].isin(['000001', '399001', '399006', '000688'])]
+    for _, row in major.iterrows():
+        print(f"INDEX|{row['名称']}|{row['代码']}|{row['最新价']}|{row['涨跌幅']}")
+except Exception as e:
+    print(f"INDEX_ERROR: {e}")
 
-stop_loss = {
-    '600352': 12.0, '600893': 42.0, '300033': 280.0,
-    '601168': 22.0, '831330': 18.0, '600487': 38.0,
-    '600089': 25.0, '600114': 25.0, '301638': 28.0
-}
+# Try getting bj stocks from a different source
+try:
+    bj = ak.stock_bid_ask_em(symbol='831330')
+    print(f"普适导航 bid-ask: {bj}")
+except Exception as e:
+    print(f"普适导航_ERROR: {e}")
 
-holdings = {
-    '600352': {'qty': 86700, 'cost': 16.52},
-    '600893': {'qty': 9000, 'cost': 49.184},
-    '300033': {'qty': 1200, 'cost': 423.488},
-    '601168': {'qty': 11000, 'cost': 26.169},
-    '831330': {'qty': 7370, 'cost': 20.361},
-    '600487': {'qty': 3000, 'cost': 43.998},
-    '688295': {'qty': 1500, 'cost': 37.843},
-    '920046': {'qty': 200, 'cost': 329.553},
-    '430046': {'qty': 10334, 'cost': 0.478},
-    '600089': {'qty': 52300, 'cost': 24.765},
-    '600114': {'qty': 4900, 'cost': 26.0},
-    '301638': {'qty': 1700, 'cost': 32.64},
-}
-
-# Try with retry
-for attempt in range(3):
-    try:
-        df = ak.stock_zh_a_spot_em()
-        df = df[df['代码'].isin(codes)]
-        break
-    except Exception as e:
-        if attempt < 2:
-            time.sleep(2)
-            continue
-        print(f'ERROR: {e}')
-        exit(1)
-
-results = []
-for _, row in df.iterrows():
-    code = row['代码']
-    name = names.get(code, code)
-    price = float(row['最新价'])
-    change_pct = float(row.get('涨跌幅', 0))
-    qty_info = holdings.get(code, {})
-    qty = qty_info.get('qty', 0)
-    cost = qty_info.get('cost', 0)
-    sl = stop_loss.get(code, None)
-    pnl = (price - cost) * qty if qty > 0 else 0
-    sl_hit = (sl is not None and price < sl)
-    results.append({
-        'code': code, 'name': name, 'price': price, 'change_pct': change_pct,
-        'qty': qty, 'cost': cost, 'stop_loss': sl, 'pnl': round(pnl, 0), 'sl_hit': sl_hit
-    })
-
-main = [r for r in results if r['code'] not in ['600089', '600114', '301638']]
-margin = [r for r in results if r['code'] == '600089']
-wife = [r for r in results if r['code'] in ['600114', '301638']]
-
-print('=== MAIN_ACCOUNT ===')
-total_pnl = 0
-for r in main:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-    total_pnl += r['pnl']
-print(f'TOTAL_PNL: {round(total_pnl, 0)}')
-
-print('=== MARGIN_ACCOUNT ===')
-for r in margin:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-
-print('=== WIFE_ACCOUNT ===')
-for r in wife:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-
-alerts = [r for r in results if r['sl_hit']]
-if alerts:
-    print('ALERTS:')
-    for a in alerts:
-        print(f'  {a["name"]}({a["code"]}) price {a["price"]} < stop {a["stop_loss"]}')
+try:
+    bj2 = ak.stock_bid_ask_em(symbol='430046')
+    print(f"圣博润 bid-ask: {bj2}")
+except Exception as e:
+    print(f"圣博润_ERROR: {e}")

@@ -1,2 +1,4 @@
+chcp 65001 > $null
+cd C:\Users\Administrator\.openclaw\workspace
 $env:PYTHONIOENCODING = "utf-8"
-& "C:\Program Files\Python311\python.exe" "C:\Users\Administrator\.openclaw\workspace\stock_check.py"
+python stock_check_report.py

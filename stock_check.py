@@ -1,74 +1,66 @@
-# -*- coding: utf-8 -*-
 import urllib.request
-import sys
 
-stocks = {
-    '亿能电力(bj920046)': 'bj920046',
-    '浙江龙盛(sh600352)': 'sh600352',
-    '航发动力(sh600893)': 'sh600893',
-    '同花顺(sz300033)': 'sz300033',
-    '西部矿业(sh601168)': 'sh601168',
-    '普适导航(bj831330)': 'bj831330',
-    '亨通光电(sh600487)': 'sh600487',
-    '中复神鹰(sh688295)': 'sh688295',
-    '圣博润(sz430046)': 'sz430046',
-    '特变电工(sh600089)': 'sh600089',
-    '东睦股份(sh600114)': 'sh600114',
-    '南网数字(sz301638)': 'sz301638',
+codes = ['sh600352','sh600893','sz300033','sh601168','bj831330','sh600487','sh688295','sz430046','sh600114','sh600089']
+names = {
+    'sh600352':'浙江龙盛','sh600893':'航发动力','sz300033':'同花顺',
+    'sh601168':'西部矿业','bj831330':'普适导航','sh600487':'亨通光电',
+    'sh688295':'中复神鹰','sz430046':'圣博润','sh600114':'东睦股份','sh600089':'特变电工'
+}
+prices = {
+    'sh600352':13.2,'sh600893':48.3,'sz300033':301,'sh601168':25.4,
+    'bj831330':20.0,'sh600487':53.85,'sh688295':55.0,'sz430046':0.29,
+    'sh600114':31.681,'sh600089':24.765
+}
+stops = {
+    'sh600352':12.0,'sh600893':42.0,'sz300033':280.0,'sh601168':22.0,
+    'bj831330':18.0,'sh600487':38.0,'sz430046':None,'sh600114':25.0,'sh600089':25.0
+}
+costs = {
+    'sh600352':16.52,'sh600893':49.184,'sz300033':423.488,'sh601168':26.169,
+    'bj831330':20.361,'sh600487':45.47,'sh688295':56.85,'sz430046':0.478,
+    'sh600114':31.681,'sh600089':24.765
+}
+amounts = {
+    'sh600352':86700,'sh600893':9000,'sz300033':1200,'sh601168':11000,
+    'bj831330':7370,'sh600487':4000,'sh688295':3000,'sz430046':10334,
+    'sh600114':4900,'sh600089':52300
 }
 
-print('=== 持仓监控 15:30 ===')
-print('')
-for name, code in stocks.items():
+codes_str = ','.join(codes)
+url = f'http://qt.gtimg.cn/q={codes_str}'
+req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+resp = urllib.request.urlopen(req, timeout=10)
+data = resp.read().decode('gbk')
+lines = data.strip().split('\n')
+
+print("=== 持仓监控 2026-03-30 15:30 ===\n")
+for line in lines:
+    if '="~' in line:
+        continue
+    if '=""' in line:
+        continue
     try:
-        url = f'https://qt.gtimg.cn/q={code}'
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        resp = urllib.request.urlopen(req, timeout=5)
-        raw = resp.read().decode('gbk')
-        fields = raw.split('~')
-        if len(fields) > 4:
-            price = fields[3]
-            pct = fields[32] if len(fields) > 32 else '0'
-            try:
-                pct_f = float(pct)
-                arrow = '↑' if pct_f > 0 else '↓' if pct_f < 0 else '-'
-                print(f'{name}: {price}元  {arrow}{abs(pct_f)}%')
-            except:
-                print(f'{name}: {price}元  {pct}%')
-        else:
-            print(f'{name}: 数据格式错误')
+        code = line.split('="')[0].replace('v_','')
+        if code not in names:
+            continue
+        parts = line.split('~')
+        price = float(parts[3]) if len(parts)>3 else 0
+        pct = parts[31] if len(parts)>31 else '0'
+        name = names.get(code, code)
+        cost = costs.get(code, 0)
+        stop = stops.get(code)
+        amt = amounts.get(code, 0)
+        profit = (price - cost) * amt
+        pct_profit = (price/cost - 1)*100 if cost > 0 else 0
+
+        warn = ''
+        if stop and price <= stop:
+            warn = ' ⚠️ 触及止损！'
+        elif stop and price < stop * 1.05:
+            warn = ' ⚠️ 接近止损'
+
+        print(f"{name}({code}): {price}元 涨跌额:{parts[31] if len(parts)>31 else '0'} 涨幅:{pct}%")
+        print(f"  成本:{cost} | 盈亏:{profit:+.0f}元({pct_profit:+.1f}%) | 止损:{stop}{warn}")
+        print()
     except Exception as e:
-        print(f'{name}: 查询失败-{e}')
-
-print('')
-print('止损提醒:')
-stop_loss = {
-    '亿能电力(bj920046)': 27.0,
-    '浙江龙盛(sh600352)': 12.0,
-    '航发动力(sh600893)': 42.0,
-    '同花顺(sz300033)': 280.0,
-    '西部矿业(sh601168)': 22.0,
-    '普适导航(bj831330)': 18.0,
-    '亨通光电(sh600487)': 38.0,
-    '特变电工(sh600089)': 25.0,
-    '东睦股份(sh600114)': 25.0,
-    '南网数字(sz301638)': 28.0,
-}
-for name, sl in stop_loss.items():
-    code = stocks.get(name, '')
-    try:
-        url = f'https://qt.gtimg.cn/q={code}'
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        resp = urllib.request.urlopen(req, timeout=5)
-        raw = resp.read().decode('gbk')
-        fields = raw.split('~')
-        if len(fields) > 4:
-            price = float(fields[3])
-            if price <= sl:
-                print(f'⚠️ {name} 现价{price}元 <= 止损{sl}元! 立即止损!')
-            elif price <= sl * 1.03:
-                print(f'🔶 {name} 现价{price}元 接近止损{sl}元')
-            else:
-                print(f'✅ {name} 现价{price}元 vs 止损{sl}元')
-    except:
         pass
