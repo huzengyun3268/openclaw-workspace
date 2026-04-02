@@ -77,6 +77,11 @@ python C:/Users/Administrator/.openclaw/workspace/skills/auto_stock/scripts/shor
 
 ---
 
+## 核心交易哲学
+
+> **"不管哪个方向，总有弱时，我们做强时行情"**
+> 只做强势，不做弱势。弱转强时跟进，强转弱时离场。
+
 ## 选股条件说明
 
 | 模式 | 条件 | 适合场景 |
