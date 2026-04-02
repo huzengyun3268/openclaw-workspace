@@ -1,21 +1,20 @@
 """
-龙虾盘后复盘 v1.0
-每天15:10自动推送持仓分析+明日计划
+龙虾盘后复盘 v2.0
+资金: 73万基准 | 中线30万+短线25万+子弹18万
 """
-import requests, datetime, json
+import requests, datetime
 
 API = "https://stockboot.jiuma.cn/api"
-CAPITAL = 800000
-POSITIONS = [
-    {"name":"浙江龙盛",  "code":"sh600352", "shares":76700,  "cost":16.948, "buy_date":"2026-03-20"},
-    {"name":"同花顺",    "code":"sz300033", "shares":1200,   "cost":423.488,"buy_date":"2026-03-20"},
-    {"name":"亨通光电",  "code":"sh600487", "shares":500,    "cost":43.210, "buy_date":"2026-03-25"},
-    {"name":"航发动力",  "code":"sh600893", "shares":1000,   "cost":49.184, "buy_date":"2026-03-25"},
-    {"name":"西部矿业",  "code":"sh601168", "shares":11000,  "cost":26.169, "buy_date":"2026-03-20"},
-    {"name":"黄金ETF",  "code":"sh518880", "shares":24000,  "cost":9.868,  "buy_date":"2026-03-31"},
-    {"name":"农业银行",  "code":"sh601288", "shares":15000,  "cost":6.921,  "buy_date":"2026-04-02"},
-    {"name":"东睦股份",  "code":"sh600114", "shares":11100,  "cost":31.176, "buy_date":"2026-03-20"},
-    {"name":"特变电工",  "code":"sh600089", "shares":52300,  "cost":24.765, "buy_date":"2026-03-20"},
+TOTAL_CASH = 730000
+
+# 中线持仓（趋势股）
+MIDDLE = [
+    # {"name":"", "code":"", "shares":0, "cost":0, "stop":0, "buy_date":""},
+]
+
+# 短线持仓（超短1-3天）
+SHORT = [
+    # {"name":"", "code":"", "shares":0, "cost":0, "buy_price":0, "buy_date":""},
 ]
 
 def get_price(code):
@@ -29,43 +28,52 @@ def get_price(code):
 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 report = f"[龙虾盘后复盘] {now}\n"
 
-total_value = 0
-total_cost = 0
-alerts = []
-
-for p in POSITIONS:
+# 中线
+report += "\n【中线持仓】\n"
+mid_total = 0
+mid_cost = 0
+for p in MIDDLE:
     price = get_price(p["code"])
-    if not price:
-        continue
-    value = price * p["shares"]
-    cost = p["cost"] * p["shares"]
-    profit = value - cost
-    pct = profit / cost * 100
+    if not price: continue
+    v = price * p["shares"]
+    c = p["cost"] * p["shares"]
+    profit = v - c
+    pct = profit / c * 100
     hold = (datetime.datetime.now() - datetime.datetime.strptime(p["buy_date"], "%Y-%m-%d")).days
-    stop = round(p["cost"] * 0.96, 2)
-    dist = (price - stop) / stop * 100
-    total_value += value
-    total_cost += cost
+    dist = (price - p["stop"]) / p["stop"] * 100
+    flag = "!!止损近" if dist < 8 else ("关注" if dist < 15 else "正常")
+    report += f"{p['name']} {price:.2f} ({pct:+.1f}%) 持{hold}天 [{flag}]\n"
+    mid_total += v
+    mid_cost += c
 
-    flag = ""
-    if dist < 8: flag = "!!距止损近"
-    if pct > 15: flag = "止盈线!"
-    elif pct < -15: flag = "深套!"
-    elif hold > 3 and pct < 2: flag = "3天不赚，规则出!"
+# 短线
+report += "\n【短线持仓】\n"
+sht_total = 0
+sht_cost = 0
+for p in SHORT:
+    price = get_price(p["code"])
+    if not price: continue
+    v = price * p["shares"]
+    c = p["cost"] * p["shares"]
+    profit = v - c
+    pct = profit / c * 100
+    hold = (datetime.datetime.now() - datetime.datetime.strptime(p["buy_date"], "%Y-%m-%d")).days
+    stop_p = round(p["buy_price"] * 0.96, 2)
+    if pct <= -3: flag = "止损!"
+    elif pct >= 8: flag = "止盈!"
+    elif hold >= 3: flag = "3天强制出!"
+    else: flag = "持有"
+    report += f"{p['name']} {price:.2f} ({pct:+.1f}%) 持{hold}天 [{flag}]\n"
+    sht_total += v
+    sht_cost += c
 
-    report += f"{p['name']} {price:.2f} ({pct:+.1f}%) 持{hold}天 {flag}\n"
-
-    if flag:
-        alerts.append(f"{p['name']}: {flag}")
-
-total_profit = total_value - total_cost
-pos_pct = total_cost / CAPITAL * 100
-report += f"\n总盈亏: {total_profit/10000:+.1f}万 | 仓位: {pos_pct:.0f}%"
-if pos_pct > 70:
-    report += " [仓位超限!]"
-report += f"\n剩余现金: {(CAPITAL-total_cost)/10000:.0f}万"
-
-if alerts:
-    report += "\n\n【操作预警】\n" + "\n".join(alerts)
-report += "\n\n【明日计划】\n- 检查持仓是否触发止损/止盈\n- 大盘环境决定是否开新仓"
+# 汇总
+total_v = mid_total + sht_total
+total_cost = mid_cost + sht_cost
+profit = total_v - total_cost
+pos_pct = total_cost / TOTAL_CASH * 100
+report += f"\n总盈亏: {profit/10000:+.1f}万 | 总仓位: {pos_pct:.0f}%"
+report += f"\n剩余现金: {(TOTAL_CASH-total_cost)/10000:.0f}万"
+report += f"\n\n子弹(18万): 大盘跌到位/恐慌时出击"
+report += f"\n\n【明日计划】\n- 检查中线趋势是否破坏\n- 检查短线是否触发止损/止盈/3天规则\n- 根据盘前报告决定是否开新仓"
 print(report)
