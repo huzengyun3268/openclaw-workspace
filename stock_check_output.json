@@ -1,0 +1,82 @@
+{
+  "sh600352": {
+    "name": "浙江龙盛",
+    "open": 13.26,
+    "yclose": 13.26,
+    "price": 13.31,
+    "high": 13.39,
+    "low": 13.17,
+    "change_pct": 0.38
+  },
+  "sh600893": {
+    "name": "航发动力",
+    "open": 49.11,
+    "yclose": 48.62,
+    "price": 49.43,
+    "high": 49.7,
+    "low": 48.55,
+    "change_pct": 1.67
+  },
+  "sz300033": {
+    "name": "同花顺",
+    "open": 301.99,
+    "yclose": 301.5,
+    "price": 306.02,
+    "high": 312.0,
+    "low": 301.99,
+    "change_pct": 1.5
+  },
+  "sh601168": {
+    "name": "西部矿业",
+    "open": 25.58,
+    "yclose": 25.49,
+    "price": 25.58,
+    "high": 25.9,
+    "low": 25.38,
+    "change_pct": 0.35
+  },
+  "bj831330": {
+    "error": "no data",
+    "raw": ""
+  },
+  "sh600487": {
+    "name": "亨通光电",
+    "open": 53.31,
+    "yclose": 53.85,
+    "price": 53.86,
+    "high": 54.3,
+    "low": 51.34,
+    "change_pct": 0.02
+  },
+  "sh688295": {
+    "name": "中复神鹰",
+    "open": 57.0,
+    "yclose": 57.61,
+    "price": 56.52,
+    "high": 57.38,
+    "low": 55.52,
+    "change_pct": -1.89
+  },
+  "bx430046": {
+    "error": "no data",
+    "raw": ""
+  },
+  "sh601318": {
+    "name": "中国平安",
+    "open": 56.29,
+    "yclose": 56.33,
+    "price": 57.45,
+    "high": 57.55,
+    "low": 56.21,
+    "change_pct": 1.99
+  },
+  "sh601857": {
+    "name": "中国石油",
+    "open": 12.44,
+    "yclose": 12.44,
+    "price": 12.45,
+    "high": 12.62,
+    "low": 12.32,
+    "change_pct": 0.08
+  }
+}

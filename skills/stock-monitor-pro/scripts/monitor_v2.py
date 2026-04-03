@@ -1,10 +1,3 @@
-﻿node.exe : - Fetching skill
-所在位置 C:\npm-global\clawhub.ps1:24 字符: 5
-+     & "node$exe"  "$basedir/node_modules/clawhub/bin/clawdhub.js" $ar ...
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (- Fetching skill:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
 #!/usr/bin/env python3
 """
 鑷€夎偂鐩戞帶棰勮宸ュ叿 V2 - 鍙嶇埇铏紭鍖栫増
@@ -23,17 +16,17 @@ from pathlib import Path
 
 WATCHLIST = [
     {
-        "code": "159142", 
-        "name": "绉戝垱鍒涗笟浜哄伐鏅鸿兘ETF", 
-        "market": "sz",
-        "type": "etf",
-        "cost": 1.158,
+        "code": "600352",
+        "name": "浙江龙盛",
+        "market": "sh",
+        "type": "stock",
+        "cost": 16.948,
         "alerts": {
             "cost_pct_above": 10.0,
             "cost_pct_below": -15.0,
-            "target_buy": 0.98,
-            "change_pct_above": 3.0,
-            "change_pct_below": -3.0,
+            "stop_loss": 12.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
             "volume_surge": 2.0,
             "ma_monitor": True,
             "rsi_monitor": True,
@@ -42,17 +35,17 @@ WATCHLIST = [
         }
     },
     {
-        "code": "159213", 
-        "name": "鏈哄櫒浜篍TF姹囨坊瀵?, 
+        "code": "300033",
+        "name": "同花顺",
         "market": "sz",
-        "type": "etf",
-        "cost": 1.307,
+        "type": "stock",
+        "cost": 423.488,
         "alerts": {
             "cost_pct_above": 10.0,
             "cost_pct_below": -15.0,
-            "target_buy": 1.11,
-            "change_pct_above": 3.0,
-            "change_pct_below": -3.0,
+            "stop_loss": 280.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
             "volume_surge": 2.0,
             "ma_monitor": True,
             "rsi_monitor": True,
@@ -61,19 +54,150 @@ WATCHLIST = [
         }
     },
     {
-        "code": "159828", 
-        "name": "鍖荤枟ETF", 
-        "market": "sz",
-        "type": "etf",
-        "cost": 0.469,
-        "note": "绛栫暐锛氭定鍒奥?.45鍑忎粨50%锛岃穼鐮绰?.40姝㈡崯",
+        "code": "600487",
+        "name": "亨通光电",
+        "market": "sh",
+        "type": "stock",
+        "cost": 43.210,
         "alerts": {
             "cost_pct_above": 10.0,
-            "cost_pct_below": -14.7,
-            "stop_loss": 0.40,
-            "target_reduce": 0.45,
-            "change_pct_above": 3.0,
-            "change_pct_below": -3.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 38.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "600893",
+        "name": "航发动力",
+        "market": "sh",
+        "type": "stock",
+        "cost": 49.184,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 42.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "601168",
+        "name": "西部矿业",
+        "market": "sh",
+        "type": "stock",
+        "cost": 26.169,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 22.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "518880",
+        "name": "黄金ETF",
+        "market": "sh",
+        "type": "etf",
+        "cost": 9.868,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -5.0,
+            "stop_loss": 0,
+            "change_pct_above": 2.5,
+            "change_pct_below": -2.5,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "831330",
+        "name": "普适导航",
+        "market": "bj",
+        "type": "stock",
+        "cost": 20.361,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 18.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "430046",
+        "name": "圣博润",
+        "market": "sz",
+        "type": "stock",
+        "cost": 0.478,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "600114",
+        "name": "东睦股份",
+        "market": "sh",
+        "type": "stock",
+        "cost": 31.176,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 25.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
+            "volume_surge": 2.0,
+            "ma_monitor": True,
+            "rsi_monitor": True,
+            "gap_monitor": True,
+            "trailing_stop": False
+        }
+    },
+    {
+        "code": "600089",
+        "name": "特变电工",
+        "market": "sh",
+        "type": "stock",
+        "cost": 24.765,
+        "alerts": {
+            "cost_pct_above": 10.0,
+            "cost_pct_below": -15.0,
+            "stop_loss": 25.0,
+            "change_pct_above": 4.0,
+            "change_pct_below": -4.0,
             "volume_surge": 2.0,
             "ma_monitor": True,
             "rsi_monitor": True,

@@ -1,140 +1,78 @@
-# -*- coding: utf-8 -*-
-import akshare as ak
+import requests
 import time
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
-codes = ['600352', '600893', '300033', '601168', '831330', '600487', '688295', '920046', '430046', '600089', '600114', '301638']
-names = {
-    '600352': '浙江龙盛', '600893': '航发动力', '300033': '同花顺',
-    '601168': '西部矿业', '831330': '普适导航', '600487': '亨通光电',
-    '688295': '中复神鹰', '920046': '亿能电力', '430046': '圣博润',
-    '600089': '特变电工', '600114': '东睦股份', '301638': '南网数字'
-}
-
-stop_loss = {
-    '600352': 12.0, '600893': 42.0, '300033': 280.0,
-    '601168': 22.0, '831330': 18.0, '600487': 38.0,
-    '600089': 25.0, '600114': 25.0, '301638': 28.0
-}
-
-holdings = {
-    '600352': {'qty': 86700, 'cost': 16.52},
-    '600893': {'qty': 9000, 'cost': 49.184},
-    '300033': {'qty': 1200, 'cost': 423.488},
-    '601168': {'qty': 11000, 'cost': 26.169},
-    '831330': {'qty': 7370, 'cost': 20.361},
-    '600487': {'qty': 3000, 'cost': 43.998},
-    '688295': {'qty': 1500, 'cost': 37.843},
-    '920046': {'qty': 200, 'cost': 329.553},
-    '430046': {'qty': 10334, 'cost': 0.478},
-    '600089': {'qty': 52300, 'cost': 24.765},
-    '600114': {'qty': 4900, 'cost': 26.0},
-    '301638': {'qty': 1700, 'cost': 32.64},
-}
-
-results = []
-
-# Try different akshare APIs
-apis_to_try = [
-    ('sina', lambda: ak.stock_zh_a_spot()),
-    ('eastmoney', lambda: ak.stock_zh_a_spot_em()),
+codes = [
+    ('sh600352', '浙江龙盛'),
+    ('sz300033', '同花顺'),
+    ('sh600487', '亨通光电'),
+    ('sh600893', '航发动力'),
+    ('sh601168', '西部矿业'),
+    ('sh518880', '黄金ETF'),
+    ('sz430046', '圣博润'),
+    ('sh600114', '东睦(老婆)'),
+    ('sh600089', '特变(两融)'),
 ]
 
-for api_name, api_func in apis_to_try:
+results = []
+for code, name in codes:
+    url = f'https://qt.gtimg.cn/q={code}'
     try:
-        for attempt in range(2):
-            try:
-                df = api_func()
-                break
-            except Exception as e:
-                if attempt < 1:
-                    time.sleep(3)
-                    continue
-                raise
-        # Filter to our codes
-        if '代码' in df.columns:
-            df = df[df['代码'].isin(codes)]
-        elif 'symbol' in df.columns:
-            # sina format - symbols like sh600352
-            pass
-        
-        for _, row in df.iterrows():
-            code = str(row.get('代码', row.get('symbol', '')))
-            # Normalize code
-            code = code.replace('sh', '').replace('sz', '').strip()
-            name = names.get(code, code)
-            price = float(row.get('最新价', row.get('close', 0)))
-            change_pct = float(row.get('涨跌幅', row.get('changepercent', 0)))
-            qty_info = holdings.get(code, {})
-            qty = qty_info.get('qty', 0)
-            cost = qty_info.get('cost', 0)
-            sl = stop_loss.get(code, None)
-            pnl = (price - cost) * qty if qty > 0 and cost > 0 else 0
-            sl_hit = (sl is not None and price > 0 and price < sl)
-            results.append({
-                'code': code, 'name': name, 'price': price, 'change_pct': change_pct,
-                'qty': qty, 'cost': cost, 'stop_loss': sl, 'pnl': round(pnl, 0), 'sl_hit': sl_hit
-            })
-        break
+        resp = requests.get(url, timeout=5, headers={'User-Agent': 'Mozilla/5.0'})
+        text = resp.text
+        parts = text.split('~')
+        if len(parts) > 10:
+            price = float(parts[3]) if parts[3] else 0
+            yesterday = float(parts[4]) if parts[4] else 0
+            chg = ((price - yesterday) / yesterday * 100) if yesterday > 0 else 0
+            results.append((name, code, price, chg))
+            print(f'{name}({code}): {price} ({chg:+.2f}%)')
+        else:
+            print(f'{name}({code}): 解析失败')
+            results.append((name, code, 0, 0))
     except Exception as e:
-        print(f'API {api_name} failed: {e}')
-        continue
+        print(f'{name}({code}): 获取失败 {e}')
+        results.append((name, code, 0, 0))
+    time.sleep(0.2)
 
-if not results:
-    # Last resort: try individual stock queries
-    for code in codes:
-        try:
-            df = ak.stock_zh_a_daily(symbol=('sh' if code.startswith(('6', '9', '5')) else 'sz') + code, adjust='qfq')
-            if len(df) > 0:
-                latest = df.iloc[-1]
-                price = float(latest.get('close', 0))
-                prev = float(df.iloc[-2]['close']) if len(df) > 1 else price
-                change_pct = (price - prev) / prev * 100 if prev > 0 else 0
-                qty_info = holdings.get(code, {})
-                qty = qty_info.get('qty', 0)
-                cost = qty_info.get('cost', 0)
-                sl = stop_loss.get(code, None)
-                pnl = (price - cost) * qty if qty > 0 and cost > 0 else 0
-                sl_hit = (sl is not None and price > 0 and price < sl)
-                results.append({
-                    'code': code, 'name': names.get(code, code), 'price': price,
-                    'change_pct': round(change_pct, 2), 'qty': qty, 'cost': cost,
-                    'stop_loss': sl, 'pnl': round(pnl, 0), 'sl_hit': sl_hit
-                })
-        except Exception as e:
-            print(f'Failed {code}: {e}')
-            continue
+print('')
+print('=== 持仓盈亏 ===')
+positions = [
+    ('浙江龙盛',    'sh600352', 76700,  16.948, 12.0),
+    ('同花顺',      'sz300033',  1200, 423.488, 280.0),
+    ('亨通光电',    'sh600487',  3000,  43.210,  38.0),
+    ('航发动力',    'sh600893',  9000,  49.184,  42.0),
+    ('西部矿业',    'sh601168', 11000,  26.169,  22.0),
+    ('黄金ETF',     'sh518880', 24000,   9.868,  None),
+    ('圣博润',      'sz430046', 10334,   0.478,  None),
+    ('东睦(老婆)',  'sh600114', 11100,  31.176,  25.0),
+    ('特变(两融)',  'sh600089', 52300,  24.765,  25.0),
+]
 
-if not results:
-    print('ERROR: All APIs failed')
-    exit(1)
-
-main = [r for r in results if r['code'] not in ['600089', '600114', '301638']]
-margin = [r for r in results if r['code'] == '600089']
-wife = [r for r in results if r['code'] in ['600114', '301638']]
-
-print('=== MAIN_ACCOUNT ===')
 total_pnl = 0
-for r in main:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-    total_pnl += r['pnl']
-print(f'TOTAL_PNL: {round(total_pnl, 0)}')
+alerts = []
+for name, code, shares, cost, stop in positions:
+    price = None
+    for rname, rcode, rprice, rchg in results:
+        if rcode == code:
+            price = rprice
+            break
+    if price and price > 0:
+        pnl = (price - cost) * shares
+        total_pnl += pnl
+        flag = ''
+        if stop and price <= stop:
+            flag = ' [触碰止损]'
+        elif stop and price <= cost * 0.95:
+            flag = ' [低于成本5%]'
+        print(f'{name}: 现价{price:.3f} | 成本{cost} | 盈亏{pnl:+,.0f}元{flag}')
+        if flag:
+            alerts.append(f'{name}{flag}')
+    else:
+        print(f'{name}: 暂无数据')
 
-print('=== MARGIN_ACCOUNT ===')
-for r in margin:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-
-print('=== WIFE_ACCOUNT ===')
-for r in wife:
-    sl_str = f'| STOP {r["stop_loss"]}' if r['stop_loss'] else ''
-    sl_warn = ' <<< SL HIT!' if r['sl_hit'] else ''
-    print(f'{r["name"]}({r["code"]}): {r["price"]} | {r["change_pct"]}% | PnL {r["pnl"]} {sl_str}{sl_warn}')
-
-alerts = [r for r in results if r['sl_hit']]
+print('')
+print(f'总盈亏(估算): {total_pnl:+,.0f}元')
 if alerts:
-    print('ALERTS:')
-    for a in alerts:
-        print(f'  {a["name"]}({a["code"]}) price {a["price"]} < stop {a["stop_loss"]}')
+    print('告警: ' + ' '.join(alerts))

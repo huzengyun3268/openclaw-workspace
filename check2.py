@@ -1,43 +1,26 @@
-# -*- coding: utf-8 -*-
-import sys
+import urllib.request, json, sys
 sys.stdout.reconfigure(encoding='utf-8')
-import akshare as ak
-import pandas as pd
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 200)
 
-stocks = [
-    ('浙江龙盛', '600352'),
-    ('特变电工', '600089'),
-    ('同花顺', '300033'),
-    ('中复神鹰', '688295'),
-    ('高澜股份', '300499'),
-    ('亿能电力', '920046'),
-    ('普适导航', '831330'),
-    ('圣博润', '430046'),
-    ('东睦股份', '600114'),
-    ('南网数字', '301638'),
-    ('华工科技', '000988'),
-    ('亨通光电', '600487'),
-    ('西部矿业', '601168'),
-    ('航发动力', '600893'),
-    ('神农种业', '300189'),
-]
-
-print('=== 个股实时行情 13:45 ===')
-for name, code in stocks:
+# Try sina finance API for OTC stocks
+codes = [('普适导航', 'bj831330'), ('圣博润', 'sz430046')]
+for name, code in codes:
     try:
-        df = ak.stock_zh_a_spot_em()
-        row = df[df['代码'] == code]
-        if not row.empty:
-            price = float(row['最新价'].values[0])
-            pct = float(row['涨跌幅'].values[0])
-            vol = row['成交额'].values[0]
-            high = row['最高'].values[0]
-            low = row['最低'].values[0]
-            emoji = 'RED' if pct < -3 else ('YEL' if pct < 0 else 'GRN')
-            print(f'{emoji} {name}({code}): {price:.3f}  {pct:+.2f}%  最高:{high} 最低:{low}  额:{vol}')
-        else:
-            print(f'ERR {name}({code}): no data')
+        url = f'http://hq.sinajs.cn/list={code}'
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0',
+            'Referer': 'http://finance.sina.com.cn'
+        })
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = r.read().decode('gbk')
+            # format: var hq_str_bj831330="name,price,change,pct,..."
+            start = data.find('"') + 1
+            end = data.find('"', start)
+            fields = data[start:end].split(',')
+            if len(fields) > 4:
+                price = float(fields[1])
+                pct = float(fields[3]) if fields[3] else 0.0
+                print(f'{name}({code}): {price:.3f} ({pct:+.2f}%)')
+            else:
+                print(f'{name}({code}): DATA ERROR {fields}')
     except Exception as e:
-        print(f'ERR {name}({code}): ERROR {e}')
+        print(f'{name}: ERROR {e}')

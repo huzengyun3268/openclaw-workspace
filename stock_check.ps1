@@ -1,1 +1,4 @@
-# stock_check.ps1 - UTF-16 encoded
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 > $null
+
+python C:\Users\Administrator\.openclaw\workspace\stock_check.py

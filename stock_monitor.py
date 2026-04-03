@@ -1,70 +1,35 @@
-# stock_monitor.py
-# 股票实时行情监控脚本
-# 用法: python stock_monitor.py
+import tushare as ts
+from datetime import datetime
 
-import akshare as ak
-import time
-import json
+ts.set_token('28babf6c11e9753b9c0e9c0af36a75f48fb18b47add9c7c3e2eacb6d0')
+pro = ts.pro_api()
 
-# 监控的股票列表
-WATCH_LIST = {
-    '600089': '特变电工',
-    '600352': '浙江龙盛', 
-    '603248': '锡华科技',
-    '300033': '同花顺',
-    '300189': '神农种业',
-    '920046': '亿能电力',
-    '831330': '普适导航',
-    '430046': '圣博润'
-}
+positions = [
+    ('浙江龙盛', 'sh600352', 76700, 16.948, 12.0),
+    ('同花顺', 'sz300033', 1200, 423.488, 280.0),
+    ('亨通光电', 'sh600487', 3000, 43.210, 38.0),
+    ('航发动力', 'sh600893', 9000, 49.184, 42.0),
+    ('西部矿业', 'sh601168', 11000, 26.169, 22.0),
+    ('黄金ETF', 'sh518880', 24000, 9.868, None),
+    ('圣博润', 'sz430046', 10334, 0.478, None),
+]
 
-def get_stock_prices():
-    """获取股票实时行情"""
+print(f"=== 持仓监控 {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
+for name, code, vol, cost, stop_loss in positions:
     try:
-        print("正在获取行情数据...")
-        df = ak.stock_zh_a_spot_em()
-        
-        results = []
-        for code, name in WATCH_LIST.items():
-            try:
-                # 精确匹配
-                row = df[df['代码'] == code]
-                if not row.empty:
-                    price = float(row['最新价'].values[0])
-                    change = float(row['涨跌幅'].values[0])
-                    volume = row['成交量'].values[0]
-                    amount = row['成交额'].values[0]
-                    results.append({
-                        'code': code,
-                        'name': name,
-                        'price': price,
-                        'change_pct': change,
-                        'volume': volume,
-                        'amount': amount
-                    })
-                    print(f"  {code} {name}: {price} ({change:+.2f}%)")
-                else:
-                    print(f"  {code} {name}: 未找到")
-            except Exception as e:
-                print(f"  {code} {name}: 获取失败 - {e}")
-        
-        return results
+        df = pro.ts_daily(ts_code=code).head(1)
+        if df.empty:
+            print(f"{name}({code}): 无今日数据")
+            continue
+        price = df.iloc[0]['close']
+        pre_close = df.iloc[0]['pre_close']
+        chg_pct = (price - pre_close) / pre_close * 100
+        profit = (price - cost) * vol
+        flag = ""
+        if stop_loss and price < stop_loss:
+            flag = " ⚠️止损"
+        elif price < cost * 0.9:
+            flag = " 🔴深套"
+        print(f"{name}: 现价{price:.3f} 涨跌{chg_pct:+.2f}% 盈亏{profit:+.0f}元{flag}")
     except Exception as e:
-        print(f"获取数据失败: {e}")
-        return []
-
-if __name__ == "__main__":
-    print("=" * 50)
-    print("股票实时行情监控")
-    print("=" * 50)
-    print()
-    
-    results = get_stock_prices()
-    
-    if results:
-        print()
-        print("=" * 50)
-        print(f"共监控 {len(results)} 只股票")
-        print("=" * 50)
-    else:
-        print("未能获取到数据")
+        print(f"{name}({code}): 获取失败 {e}")
