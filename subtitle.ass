@@ -1,0 +1,16 @@
+[Script Info]
+Title: 念奴娇·大浪坑泳
+ScriptType: v4.00+
+PlayDepth: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,SimHei,48,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,20,20,20,134
+
+[Events]
+Format: Layer, Start, End, Style, Text
+Dialogue: 0,0:00:01.00,0:00:06.00,Default,青山夹岸，碧波静，\n倒映层林如壁。
+Dialogue: 0,0:00:06.50,0:00:11.00,Default,红浮标畔从容入，\n天地与我为一。
+Dialogue: 0,0:00:11.50,0:00:15.00,Default,振臂推浪，仰天长笑，\n身在清流里。
+Dialogue: 0,0:00:15.50,0:00:19.00,Default,胸中无物，满身都是山色。
+Dialogue: 0,0:00:01.00,0:00:03.50,Default,{\\fnSimSun\\fs36}念奴娇·大浪坑泳
